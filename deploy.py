@@ -7,7 +7,7 @@ try:
     import requests
 except:
     print('package requests is required for this program, installing now')
-    subprocess.call('sudo python3 -m pip install -U requests')
+    subprocess.call('sudo python3 -m pip install -U requests', shell=True)
     try:
         import requests
     except:
@@ -163,15 +163,15 @@ subprocess.call('sudo python3 -m pip install -U chardet fastcache cchardet', she
 print('Installing letsencrypt')
 os.mkdir('/etc/letsencrypt')
 os.chdir('/etc/letsencrypt')
-subprocess.call('sudo git clone https://github.com/certbot/certbot.git')
+subprocess.call('sudo git clone https://github.com/certbot/certbot.git', shell=True)
 os.chdir('/etc/letsencrypt/certbot')
-subprocess.call('sudo service apache2 stop || sudo service apache2 stop')
-subprocess.call('sudo chmod a+x /etc/letsencrypt/certbot/certbot-auto')
+subprocess.call('sudo service apache2 stop || sudo service apache2 stop', shell=True)
+subprocess.call('sudo chmod a+x /etc/letsencrypt/certbot/certbot-auto', shell=True)
 if mirrors_to_deploy:
     for mirror in mirrors_to_deploy:
         _cert_reg_str = 'sudo service apache2 stop && /etc/letsencrypt/certbot/certbot-auto certonly --agree-tos -t -m %s --standalone -d %s &&sudo service apache2 start' % (
             email, mirrors_info[mirror]['domain'])
-        subprocess.call(_cert_reg_str)
+        subprocess.call(_cert_reg_str, shell=True)
         if not os.path.exists('/etc/letsencrypt/live/%s' % mirrors_info[mirror]['domain']):
             print('[ERROR] Could NOT obtain an ssl cert, '
                   'please check your DNS record, '
@@ -181,14 +181,14 @@ if mirrors_to_deploy:
 
     print('Obtain SSL cert successfully, now installing MagicWebsiteMirror itself')
 
-    subprocess.call('cd /var/www')
+    subprocess.call('cd /var/www', shell=True)
     os.chdir('/var/www')
-    subprocess.call('git clone https://github.com/Aploium/MagicWebsiteMirror.git')
+    subprocess.call('git clone https://github.com/Aploium/MagicWebsiteMirror.git', shell=True)
     for mirror in mirrors_to_deploy:
-        subprocess.call('cp -r /var/www/MagicWebsiteMirror /var/www/%s' % mirror)
-        subprocess.call('sudo chown -R www-data /var/www/%s &&sudo chgrp -R www-data /var/www/%s' % (mirror, mirror))
+        subprocess.call('cp -r /var/www/MagicWebsiteMirror /var/www/%s' % mirror, shell=True)
+        subprocess.call('sudo chown -R www-data /var/www/%s &&sudo chgrp -R www-data /var/www/%s' % (mirror, mirror), shell=True)
         for file_from, file_to in mirrors_info[mirror]['cfg']:
-            subprocess.call('cp /var/www/%s/more_configs/%s /var/www/%s/%s' % (mirror, file_from, mirror, file_to))
+            subprocess.call('cp /var/www/%s/more_configs/%s /var/www/%s/%s' % (mirror, file_from, mirror, file_to), shell=True)
 
         with open('/var/www/%s/config.py' % mirror, 'a', encoding='utf-8') as fp:
             fp.write('\n####### Added By MWM_OneKeyDeploy #######\n')
@@ -196,9 +196,9 @@ if mirrors_to_deploy:
 
             fp.write("my_host_scheme = '%s'\n" % ('https://' if use_https else 'http://'))
 
-    subprocess.call('rm -rf /var/www/MagicWebsiteMirror')
+    subprocess.call('rm -rf /var/www/MagicWebsiteMirror', shell=True)
 
-    subprocess.call('cd /etc/apache2/site-enabled')
+    subprocess.call('cd /etc/apache2/site-enabled', shell=True)
     os.chdir('/etc/apache2/site-enabled')
 
     for mirror in mirrors_to_deploy:
@@ -216,4 +216,4 @@ if mirrors_to_deploy:
             with open('%s_%s.conf' % (mirror, scheme), 'w', encoding='utf-8') as fp:
                 fp.write(conf_text)
 
-    subprocess.call('sudo service apache2 restart')
+    subprocess.call('sudo service apache2 restart', shell=True)
