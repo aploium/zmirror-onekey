@@ -19,7 +19,8 @@ try:
     import requests
 except:
     print('package requests is required for this program, installing now')
-    subprocess.call('apt-get update && apt-get install python3 python3-pip -y && python3 -m pip install -U requests', shell=True)
+    subprocess.call('apt-get update && apt-get install python3 python3-pip -y && python3 -m pip install -U requests',
+                    shell=True)
     try:
         import requests
     except:
@@ -145,7 +146,7 @@ mirrors_to_deploy = []
 _input = -1
 while _input:
     _input = input(
-        """Please select mirror you want to deploy?
+        """\n\n\n\nPlease select mirror you want to deploy?
 select one mirror a time, you could select zero or more mirror(s)
 1. Google (include scholar, image, zh_wikipedia) {google}
 2. twitter (PC) {twitterPC}
@@ -167,12 +168,13 @@ input 0-5: """.format(
     if not _input:
         break
 
+    logging.debug("input:" + _input)
+
     try:
         _input = int(_input)
     except:
         print("Please input correct number")
         _input = -1
-    print(_input)
 
     if _input == 0:
         break
@@ -189,7 +191,7 @@ input 0-5: """.format(
         5: "instagram",
     }[_input]
 
-    # 获取对应的域名
+    # 输入镜像对应的域名, 要求已经在DNS设置中用一个A记录指向了本服务器
     domain = input("Please input your domain for this mirror: ")
     # 初步检验域名是否已经被正确设置
     try:
@@ -199,7 +201,7 @@ input 0-5: """.format(
         print("Sorry, your domain [{domain}] is not setting correctly. {exc}".format(domain=domain, exc=str(e)))
         continue_anyway = input("Continue anyway? (y/N): ")
         if continue_anyway not in ('y', 'yes', 'Yes', 'YES'):
-            continue
+            continue  # 重新来
     else:
         if domain_ip != local_ip:  # 目标域名的IP不等于本地机器的IP
             print("""Sorry, your domain({domain})'s ip does not equals to this machine's ip.
@@ -207,19 +209,21 @@ domain's ip is: {domain_ip}
 this machine's ip is: {local_ip}
 """.format(domain=domain, domain_ip=domain_ip, local_ip=local_ip)
                   )
-        continue_anyway = input("Continue anyway? (y/N): ")
-        if continue_anyway not in ('y', 'yes', 'Yes', 'YES'):
-            continue
+            continue_anyway = input("Continue anyway? (y/N): ")
+            if continue_anyway not in ('y', 'yes', 'Yes', 'YES'):
+                continue  # 重新来
 
     if mirror_type in mirrors_to_deploy:  # 在选项里, 镜像已存在, 则删去
         mirrors_to_deploy.remove(mirror_type)
+        print("Mirror:{mirror_type} unchecked.")
     else:
-        mirrors_to_deploy.append(domain)
+        mirrors_to_deploy.append(mirror_type)
+        print("Mirror:{mirror_type} Domain:{domain} checked".format(mirror_type=mirror_type, domain=domain))
 
     logging.debug(mirrors_to_deploy)
 
 if not mirrors_to_deploy:
-    print('[ERROR] you didn\'t select any mirror.\nAbort install')
+    print('[ERROR] you didn\'t select any mirror.\nAbort installation')
     exit(4)
 
 email = input('Please input your email (because letsencrypt requires an email for certification)\n') or 'none@donotexist.com'
