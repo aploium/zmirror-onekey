@@ -192,8 +192,21 @@ input 0-5: """.format(
     }[_input]
 
     # 输入镜像对应的域名, 要求已经在DNS设置中用一个A记录指向了本服务器
-    domain = input("Please input your domain for this mirror: ")
-    domain = domain.strip(' /.\t').replace('https://', '').replace('http://', '')  # 修剪
+    while True:  # 这里面会检查输入的是否是三级域名
+        domain = input("Please input your domain for this mirror: ")
+        domain = domain.strip(' /.\t').replace('https://', '').replace('http://', '')  # 修剪
+        if domain.count('.') != 2:
+            if input(("Your domain [{domain}] is not an third-level domain, "
+                      "which contains three parts and two dots. \n"
+                      "eg1: lovelucia.zmirrordemo.com eg2: g.mymirror.com\n"
+                      "zmirror officially only support third-level domain\n"
+                      "a none third-level domain MAY work, but may cause potential errors\n"
+                      "Continue anyway(y/N)?"
+                      ).format(domain=domain)) in ('y', 'yes', 'Yes', 'YES'):
+                break
+                # 如果选择的是 N, 则重新输入
+        else:  # 输入的是三级域名
+            break
 
     # 初步检验域名是否已经被正确设置
     try:
