@@ -19,7 +19,7 @@ try:
     import requests
 except:
     print('package requests is required for this program, installing now')
-    subprocess.call('sudo apt-get install python3 python3-pip -y && sudo python3 -m pip install -U requests', shell=True)
+    subprocess.call('apt-get update && apt-get install python3 python3-pip -y && python3 -m pip install -U requests', shell=True)
     try:
         import requests
     except:
