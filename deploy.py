@@ -5,6 +5,7 @@ import socket
 import shutil
 import subprocess
 import logging
+import traceback
 from urllib.parse import urljoin
 import re
 
@@ -50,22 +51,22 @@ server_configs = {
 
         "pre_delete_files": [
             "{config_root}/sites-enabled/000-default.conf",
-            "{config_root}/sites-enabled/apache2-doc.conf",
-            "{config_root}/sites-enabled/security.conf",
+            "{config_root}/conf-enabled/apache2-doc.conf",
+            "{config_root}/conf-enabled/security.conf",
         ],
 
         "configs": {
             "http_generic": {
                 "url": urljoin(__ONKEY_PROJECT_URL_CONTENT__, "configs/apache2-http.conf"),
-                "file_path": "sites-enabled/zmirror-http-redirection.conf",
-            },
-            "https": {
-                "url": urljoin(__ONKEY_PROJECT_URL_CONTENT__, "configs/apache2-https.conf"),
-                "file_path": "sites-enabled/zmirror-{mirror_name}-https.conf",
+                "file_path": "conf-enabled/zmirror-http-redirection.conf",
             },
             "apache_boilerplate": {
                 "url": urljoin(__ONKEY_PROJECT_URL_CONTENT__, "configs/apache2-boilerplate.conf"),
                 "file_path": "conf-enabled/zmirror-apache-boilerplate.conf",
+            },
+            "https": {
+                "url": urljoin(__ONKEY_PROJECT_URL_CONTENT__, "configs/apache2-https.conf"),
+                "file_path": "sites-enabled/zmirror-{mirror_name}-https.conf",
             },
         }
 
@@ -302,7 +303,10 @@ for pre_delete_file in this_server['pre_delete_files']:
         config_root=config_root, htdoc=htdoc
     )
     print("deleting: " + abs_path)
-    os.remove(abs_path)
+    try:
+        os.remove(abs_path)
+    except:
+        logging.debug("Unable to remove file:" + abs_path + "\n" + traceback.format_exc())
 
 # 拷贝并设置各个镜像
 for mirror in mirrors_to_deploy:
