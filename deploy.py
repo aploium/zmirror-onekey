@@ -139,14 +139,14 @@ subprocess.call('yes|./certbot-auto upgrade', shell=True, cwd='/etc/certbot/')
 
 print("[zmirror] Dependencies Installation Completed")
 
-print('[zmirror] Now we need some information:')
+print('\n\n\n\n[zmirror] Now we need some information:')
 
 mirrors_to_deploy = []
 
 _input = -1
 while _input:
     _input = input(
-        """\n\n\n\nPlease select mirror you want to deploy?
+        """Please select mirror you want to deploy?
 select one mirror a time, you could select zero or more mirror(s)
 1. Google (include scholar, image, zh_wikipedia) {google}
 2. twitter (PC) {twitterPC}
