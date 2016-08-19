@@ -1,21 +1,36 @@
 # coding=utf-8
-import subprocess
 import os
 import sys
+import socket
+import shutil
+import subprocess
+import logging
+from urllib.parse import urljoin
+import re
+
+__AUTHOR__ = 'Aploium <i@z.codes>'
+__VERSION__ = '0.2.0'
+__ZMIRROR_PROJECT_URL__ = 'https://github.com/aploium/zmirror/'
+__ZMIRROR_GIT_URL__ = 'https://github.com/aploium/zmirror.git'
+__ONKEY_PROJECT_URL__ = 'https://github.com/aploium/zmirror-onekey/'
+__ONKEY_PROJECT_URL_CONTENT__ = 'https://raw.githubusercontent.com/aploium/zmirror-onekey/master/'
 
 try:
     import requests
 except:
     print('package requests is required for this program, installing now')
-    subprocess.call('sudo python3 -m pip install -U requests', shell=True)
+    subprocess.call('sudo apt-get install python3 python3-pip -y && sudo python3 -m pip install -U requests', shell=True)
     try:
         import requests
     except:
         print('Could not install requests, program exit')
         exit(1)
+    print('--------------------------')
 
-__author__ = 'Aploium <i@z.codes>'
-__version__ = '0.1.0'
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='[%(levelname)s %(asctime)s %(funcName)s] %(message)s',
+)
 
 if sys.platform != 'linux':
     print('This program can ONLY be used in debian-like Linux (debian, ubuntu and some others)')
@@ -24,196 +39,334 @@ if os.geteuid() != 0:
     print('Root privilege is required for this program. Please use `sudo python3 deploy.py`')
     exit(2)
 
-mirrors_info = {
+server_configs = {
+    "apache": {
+        "config_root": "/etc/apache2/",
+        "htdoc": "/var/www/",
+
+        "common_configs": ["http_generic", "apache_boilerplate"],
+        "site_unique_configs": ["https"],
+
+        "pre_delete_files": [
+            "{config_root}/sites-enabled/000-default.conf",
+            "{config_root}/sites-enabled/apache2-doc.conf",
+            "{config_root}/sites-enabled/security.conf",
+        ],
+
+        "configs": {
+            "http_generic": {
+                "url": urljoin(__ONKEY_PROJECT_URL_CONTENT__, "configs/apache2-http.conf"),
+                "file_path": "sites-enabled/zmirror-http-redirection.conf",
+            },
+            "https": {
+                "url": urljoin(__ONKEY_PROJECT_URL_CONTENT__, "configs/apache2-https.conf"),
+                "file_path": "sites-enabled/zmirror-{mirror_name}-https.conf",
+            },
+            "apache_boilerplate": {
+                "url": urljoin(__ONKEY_PROJECT_URL_CONTENT__, "configs/apache2-boilerplate.conf"),
+                "file_path": "conf-enabled/zmirror-apache-boilerplate.conf",
+            },
+        }
+
+    }
+}
+
+mirrors_settings = {
     'google': {
         'domain': None,
-        'cfg': [('config_google_and_zhwikipedia.py', 'config.py'), ],
-        'server_cfg': {'apache': {
-            'http': 'https://raw.githubusercontent.com/Aploium/mwm_onekey/master/configs_apache2/google-http.conf',
-            'https': 'https://raw.githubusercontent.com/Aploium/mwm_onekey/master/configs_apache2/google-https.conf'}
-        },
+        'cfg': [('more_configs/config_google_and_zhwikipedia.py', 'config.py'), ],
     },
+
     'youtubePC': {
         'domain': None,
-        'cfg': [('config_youtube.py', 'config.py'),
-                ('custom_func_youtube.py', 'custom_func.py')],
-        'server_cfg': {'apache': {'http': '', 'https': ''}},
+        'cfg': [('more_configs/config_youtube.py', 'config.py'),
+                ('more_configs/custom_func_youtube.py', 'custom_func.py')],
     },
-    # 'youtubeMobile': {'domain': None},
+
     'twitterPC': {
         'domain': None,
-        'cfg': [('config_twitter_pc.py', 'config.py'),
-                ('custom_func_twitter.py', 'custom_func.py'), ],
-        'server_cfg': {'apache': {'http': '', 'https': ''}},
+        'cfg': [('more_configs/config_twitter_pc.py', 'config.py'),
+                ('more_configs/custom_func_twitter.py', 'custom_func.py'), ],
     },
+
     'twitterMobile': {
         'domain': None,
-        'cfg': [('config_twitter_mobile.py', 'config.py'),
-                ('custom_func_twitter.py', 'custom_func.py'), ],
-        'server_cfg': {'apache': {'http': '', 'https': ''}},
+        'cfg': [('more_configs/config_twitter_mobile.py', 'config.py'),
+                ('more_configs/custom_func_twitter.py', 'custom_func.py'), ],
     },
+
     'instagram': {
         'domain': None,
-        'cfg': [('config_instagram.py', 'config.py'), ],
-        'server_cfg': {'apache': {'http': '', 'https': ''}},
+        'cfg': [('more_configs/config_instagram.py', 'config.py'), ],
     },
 }
 
-print('OneKey deploy script for MagicWebsiteMirror. version', __version__)
-print('This script will automatically deploy mirror(s) using MagicWebsiteMirror in your ubuntu(debian)')
+print('OneKey deploy script for zmirror. version', __VERSION__)
+print('This script will automatically deploy mirror(s) using zmirror in your ubuntu')
 print('You could cancel this script in the config stage by precessing Ctrl-C')
-print('This Program Only Support Ubuntu 14.04 (for now)')
+print('This Program Only Support Ubuntu 14.04/15.10/16.10+ (for now)')
 print()
-print('Now we need some information:')
+
+# ################# 安装一些依赖包 ####################
+print('[zmirror] Installing some necessarily packages')
+# 设置本地时间为北京时间
+subprocess.call('cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime', shell=True)
+# 更新apt-get
+subprocess.call('apt-get update && apt-get upgrade -y', shell=True)
+# 安装必须的包
+subprocess.call('apt-get install git python3 python3-pip wget -y', shell=True)
+# 安装Apache2和wsgi
+subprocess.call("""LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/apache2 &&
+apt-key update &&
+apt-get update &&
+apt-get upgrade -y &&
+apt-get install apache2 -y &&
+a2enmod rewrite mime include headers filter expires deflate autoindex setenvif ssl http2 &&
+apt-get install libapache2-mod-wsgi-py3 -y &&
+a2enmod wsgi
+""", shell=True)
+
+# 安装和更新必须的python包
+subprocess.call('python3 -m pip install -U requests flask', shell=True)
+# 安装和更新非必须, 但是有好处的python包
+subprocess.call('python3 -m pip install -U chardet fastcache cchardet', shell=True)
+
+print('[zmirror] Installing letsencrypt')
+subprocess.call('git clone https://github.com/certbot/certbot.git', shell=True, cwd='/etc/')
+subprocess.call('chmod a+x /etc/certbot/certbot-auto', shell=True, cwd='/etc/certbot/')
+subprocess.call('yes|./certbot-auto upgrade', shell=True, cwd='/etc/certbot/')
+
+print("[zmirror] Dependencies Installation Completed")
+
+print('[zmirror] Now we need some information:')
 
 mirrors_to_deploy = []
 
 _input = -1
 while _input:
     _input = input(
-        'Please select mirror you want to deploy?\n'
-        'select one mirror a time, you could select zero or more mirror(s)'
-        '1. Google (include scholar, image, zh_wikipedia) %s\n'
-        '2. twitter (mobile and pc) %s\n'
-        '3. youtube (pc) %s\n'
-        '4. instagram %s\n'
-        '0. Go to next steps. (OK, I have selected all mirror(s) I want to deploy)\n'
-        % (
-            '[SELECTED]' if 'google' in mirrors_to_deploy else '',
-            '[SELECTED]' if 'twitter' in mirrors_to_deploy else '',
-            '[SELECTED]' if 'youtube' in mirrors_to_deploy else '',
-            '[SELECTED]' if 'instagram' in mirrors_to_deploy else '',
+        """Please select mirror you want to deploy?
+select one mirror a time, you could select zero or more mirror(s)
+1. Google (include scholar, image, zh_wikipedia) {google}
+2. twitter (PC) {twitterPC}
+3. twitter (Mobile) {twitterMobile}
+4. youtube (pc) {youtubePC}
+5. instagram {instagram}
+0. Go to next steps. (OK, I have selected all mirror(s) I want to deploy)
+
+input 0-5: """.format(
+            google='[SELECTED]' if 'google' in mirrors_to_deploy else '',
+            twitterPC='[SELECTED]' if 'twitterPC' in mirrors_to_deploy else '',
+            twitterMobile='[SELECTED]' if 'twitterMobile' in mirrors_to_deploy else '',
+            youtubePC='[SELECTED]' if 'youtubePC' in mirrors_to_deploy else '',
+            instagram='[SELECTED]' if 'instagram' in mirrors_to_deploy else '',
         )
+
     )
+
     if not _input:
         break
-    elif _input == 1:
-        mirrors_to_deploy.append('google')
-    elif _input == 2:
-        mirrors_to_deploy.append('twitterPC')
-        mirrors_to_deploy.append('twitterMobile')
-    elif _input == 3:
-        mirrors_to_deploy.append('youtubePC')
-        # mirrors_to_deploy.append('youtubeMobile')
-    elif _input == 4:
-        mirrors_to_deploy.append('instagram')
+
+    try:
+        _input = int(_input)
+    except:
+        print("Please input correct number")
+        _input = -1
+    print(_input)
+
+    if _input == 0:
+        break
+    if not (0 <= _input <= 5):
+        print('[ERROR] please input correct number (0-5), only select one mirror a time\n'
+              '-------------------------\n\n')
+        continue
+
+    mirror_type = {
+        1: "google",
+        2: "twitterPC",
+        3: "twitterMobile",
+        4: "youtubePC",
+        5: "instagram",
+    }[_input]
+
+    # 获取对应的域名
+    domain = input("Please input your domain for this mirror: ")
+    # 初步检验域名是否已经被正确设置
+    try:
+        domain_ip = socket.gethostbyname(domain)
+        local_ip = socket.gethostbyname(socket.gethostname())
+    except Exception as e:  # 查询目标域名的IP失败
+        print("Sorry, your domain [{domain}] is not setting correctly. {exc}".format(domain=domain, exc=str(e)))
+        continue_anyway = input("Continue anyway? (y/N): ")
+        if continue_anyway not in ('y', 'yes', 'Yes', 'YES'):
+            continue
     else:
-        print('[ERROR] please input correct number (0-4), only select one mirror a time')
+        if domain_ip != local_ip:  # 目标域名的IP不等于本地机器的IP
+            print("""Sorry, your domain({domain})'s ip does not equals to this machine's ip.
+domain's ip is: {domain_ip}
+this machine's ip is: {local_ip}
+""".format(domain=domain, domain_ip=domain_ip, local_ip=local_ip)
+                  )
+        continue_anyway = input("Continue anyway? (y/N): ")
+        if continue_anyway not in ('y', 'yes', 'Yes', 'YES'):
+            continue
 
-email = 'none@donotexist.com'
-use_https = False
-if mirrors_to_deploy:
-    # _input = input('do you want to use HTTPS (will install letsencrypt for https certification)? recommend for yes. (Y/n)')
-    # if _input in ('n', 'no', 'not', 'none'):
-    #     use_https = False
-    #     print('will NOT install letsencrypt and HTTPS would NOT be available')
-    # else:
-    use_https = True
-    print('program will install letsencrypt and enable https')
-    # _input = input('[OPTIONAL] if you don\'t want to use default https port (443), you could specify a different port(1-65535). press ENTER to skip')
-    # port = None
-    # if _input:
-    #     try:
-    #         port = int(_input)
-    #     except:
-    #         print('a wrong port was given, would use default port 443:', port)
+    if mirror_type in mirrors_to_deploy:  # 在选项里, 镜像已存在, 则删去
+        mirrors_to_deploy.remove(mirror_type)
+    else:
+        mirrors_to_deploy.append(domain)
 
-    _input = input('Please input your email (because letsencrypt requires an email for certification)')
-    email = _input
-    print('Your email:', email)
+    logging.debug(mirrors_to_deploy)
 
-    print('You need an domain for each mirror, please input your domain (eg: g.mydomain.com):\n'
-          'And set these domain(s)\'s DNS record to this machine\n'
-          'domain for every site MUST NOT BE SAME\n'
-          'don\'t have an domain? Don\'t panic. Please send an email to the author (aploium email: i@z.codes), '
-          'and he will be happily to give you some domains(free)\n')
-    for mirror in mirrors_to_deploy:
-        _input = input('Please input domain for ', mirror)
-        mirrors_info[mirror]['domain'] = _input
-    for mirror in mirrors_to_deploy:
-        print('Domain:', mirrors_info[mirror]['domain'], 'for Mirror', mirror)
-else:
+if not mirrors_to_deploy:
     print('[ERROR] you didn\'t select any mirror.\nAbort install')
     exit(4)
 
-_input = input('Now, we are going to install, please check your settings above, really continue?(Y/n)')
-if _input in ('n', 'no', 'not', 'none'):
+email = input('Please input your email (because letsencrypt requires an email for certification)\n') or 'none@donotexist.com'
+
+print('Your email:', email)
+print('You need one domain for each mirror, please input your domain (eg: g.mydomain.com):\n'
+      'And set these domain(s)\'s DNS record to this machine\n'
+      'domain for every site MUST NOT BE SAME\n'
+      'don\'t have an domain? Don\'t panic. Please send an email to the author (aploium email: i@z.codes), '
+      'and he will be happily to give you some domains(free)\n')
+
+# 最后确认一遍设置
+print('Now, we are going to install, please check your settings here:')
+print("Email: " + email)
+for mirror in mirrors_to_deploy:
+    print("Mirror:{mirror} Domain:{domain}".format(mirror=mirror, domain=mirrors_settings[mirror]['domain']))
+
+if input('really continue (Y/n)? ') in ('N', 'No', 'n', 'no', 'not', 'none'):
     print('installation aborted.')
     exit(5)
 
 # ############### Really Install ###################
-print('Installing some necessarily packages')
-# 更新apt-get
-subprocess.call('sudo apt-get update', shell=True)
-# 安装必须的包
-subprocess.call('sudo apt-get install git python3 python3-pip wget -y', shell=True)
-# 安装Apache2和wsgi
-subprocess.call('sudo apt-get install apache2 libapache2-mod-wsgi-py3', shell=True)
-# 启用一些Apache模块
-subprocess.call('sddo a2enmod rewrite mime include headers filter expires deflate autoindex setenvif ssl')
 
-# 设置本地时间为北京时间
-subprocess.call('sudo cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime', shell=True)
+# 通过 letsencrypt 获取HTTPS证书
+print("Fetching HTTPS certifications")
+subprocess.call("service apache2 stop", shell=True)  # 先关掉apache
+for mirror in mirrors_to_deploy:
+    domain = mirrors_settings[mirror]['domain']
+    print("Obtaining: {domain}".format(domain=domain))
+    subprocess.call(
+        './certbot-auto certonly --agree-tos -t -m "{email}" --standalone -d "{domain}"'
+            .format(email=email, domain=domain),
+        shell=True, cwd='/etc/certbot/')
 
-# 安装和更新必须的python包
-subprocess.call('sudo python3 -m pip install -U requests flask', shell=True)
-# 安装和更新非必须, 但是有好处的python包
-subprocess.call('sudo python3 -m pip install -U chardet fastcache cchardet', shell=True)
+    # 检查是否成功获取证书
+    if not os.path.exists('/etc/letsencrypt/live/{domain}'.format(domain=domain)):
+        print('[ERROR] Could NOT obtain an ssl cert, '
+              'please check your DNS record, '
+              'and then run again.\n'
+              'Installation abort')
+        exit(3)
+    print("Succeed: {domain}".format(domain=domain))
+subprocess.call("service apache2 start", shell=True)  # 重新启动apache
 
-print('Installing letsencrypt')
-os.mkdir('/etc/letsencrypt')
-os.chdir('/etc/letsencrypt')
-subprocess.call('sudo git clone https://github.com/certbot/certbot.git', shell=True)
-os.chdir('/etc/letsencrypt/certbot')
-subprocess.call('sudo service apache2 stop || sudo service apache2 stop', shell=True)
-subprocess.call('sudo chmod a+x /etc/letsencrypt/certbot/certbot-auto', shell=True)
-if mirrors_to_deploy:
-    for mirror in mirrors_to_deploy:
-        _cert_reg_str = 'sudo service apache2 stop && /etc/letsencrypt/certbot/certbot-auto certonly --agree-tos -t -m %s --standalone -d %s &&sudo service apache2 start' % (
-            email, mirrors_info[mirror]['domain'])
-        subprocess.call(_cert_reg_str, shell=True)
-        if not os.path.exists('/etc/letsencrypt/live/%s' % mirrors_info[mirror]['domain']):
-            print('[ERROR] Could NOT obtain an ssl cert, '
-                  'please check your DNS record, '
-                  'and run again after few minutes.\n'
-                  'Installation abort')
-            exit(3)
+# ####### 安装zmirror自身 #############
+print('Obtain SSL cert successfully, now installing zmirror itself')
 
-    print('Obtain SSL cert successfully, now installing MagicWebsiteMirror itself')
+this_server = server_configs['apache']
+htdoc = this_server['htdoc']
+config_root = this_server['config_root']
+assert isinstance(htdoc, str)
+assert isinstance(config_root, str)
+os.chdir(htdoc)
+subprocess.call('git clone %s zmirror' % __ZMIRROR_GIT_URL__, shell=True, cwd=htdoc)
+zmirror_source_folder = os.path.join(htdoc, 'zmirror')
 
-    subprocess.call('cd /var/www', shell=True)
-    os.chdir('/var/www')
-    subprocess.call('git clone https://github.com/Aploium/MagicWebsiteMirror.git', shell=True)
-    for mirror in mirrors_to_deploy:
-        subprocess.call('cp -r /var/www/MagicWebsiteMirror /var/www/%s' % mirror, shell=True)
-        subprocess.call('sudo chown -R www-data /var/www/%s &&sudo chgrp -R www-data /var/www/%s' % (mirror, mirror), shell=True)
-        for file_from, file_to in mirrors_info[mirror]['cfg']:
-            subprocess.call('cp /var/www/%s/more_configs/%s /var/www/%s/%s' % (mirror, file_from, mirror, file_to), shell=True)
+# 预删除文件
+for pre_delete_file in this_server['pre_delete_files']:
+    abs_path = pre_delete_file.format(
+        config_root=config_root, htdoc=htdoc
+    )
+    print("deleting: " + abs_path)
+    os.remove(abs_path)
 
-        with open('/var/www/%s/config.py' % mirror, 'a', encoding='utf-8') as fp:
-            fp.write('\n####### Added By MWM_OneKeyDeploy #######\n')
-            fp.write("my_host_name = '%s'\n" % mirrors_info[mirror]['domain'])
+# 拷贝并设置各个镜像
+for mirror in mirrors_to_deploy:
+    domain = mirrors_settings[mirror]['domain']
+    this_mirror_folder = os.path.join(htdoc, mirror)
+    # 将 zmirror 文件夹复制一份
+    shutil.copytree(zmirror_source_folder, this_mirror_folder)
+    # 更改文件夹所有者为 www-data (apache的用户)
+    shutil.chown(this_mirror_folder, "www-data", "www-data")
 
-            fp.write("my_host_scheme = '%s'\n" % ('https://' if use_https else 'http://'))
+    this_mirror = mirrors_settings[mirror]
 
-    subprocess.call('rm -rf /var/www/MagicWebsiteMirror', shell=True)
+    for file_from, file_to in this_mirror['cfg']:
+        shutil.copy(os.path.join(this_mirror_folder, file_from),
+                    os.path.join(this_mirror_folder, file_to))
 
-    subprocess.call('cd /etc/apache2/site-enabled', shell=True)
-    os.chdir('/etc/apache2/site-enabled')
+    with open(os.path.join(this_mirror_folder, 'config.py'), 'r+', encoding='utf-8') as fp:
+        # noinspection PyRedeclaration
+        content = fp.read()
 
-    for mirror in mirrors_to_deploy:
-        conf_text = ''
-        print('downloading %s\'s config file')
-        for scheme in ('http', 'https'):
-            try:
-                conf_text = requests.get(mirrors_to_deploy[mirror]['server_cfg']['apache'][scheme]).text
-            except Exception as e:
-                print('Unable to download config of %s, porgram exit', e)
-                exit(1)
-            # noinspection PyTypeChecker
-            conf_text = conf_text.replace('{{domain}}', mirrors_info[mirror]['domain'])
-            conf_text = conf_text.replace('{{mirror_name}}', mirror)
-            with open('%s_%s.conf' % (mirror, scheme), 'w', encoding='utf-8') as fp:
-                fp.write(conf_text)
+        # 将 my_host_name 修改为对应的域名
+        content = re.sub(r"""my_host_name *= *(['"])[-.\w]+\1""",
+                         "my_host_name = '{domain}' # Modified by zmirror-onekey".format(domain=domain),
+                         content, count=1)
+        # 将 my_host_scheme 修改为 https://
+        content = re.sub(r"""my_host_scheme *= *(['"])https?://\1""",
+                         "my_host_scheme = 'https://' # Modified by zmirror-onekey",
+                         content, count=1)
+        # 在文件末尾添加 verbose_level = 2
+        content += '\nverbose_level = 2 # Added by zmirror-onekey\n'
 
-    subprocess.call('sudo service apache2 restart', shell=True)
+        fp.seek(0)  # 指针返回文件头
+        fp.write(content)  # 回写
+
+shutil.rmtree(zmirror_source_folder)  # 删除无用的 zmirror 文件夹
+print("zmirror folders deploy completed")
+
+# ############# 配置Apache ###############
+os.chdir(config_root)
+
+# 下载通用配置文件
+for conf_name in this_server['common_configs']:
+    assert isinstance(config_root, str)
+    url = this_server['configs'][conf_name]['url']
+    file_path = this_server['configs'][conf_name]['file_path']
+
+    with open(os.path.join(config_root, file_path), 'w', encoding='utf-8') as fp:
+        print("downloading: ", conf_name)
+        fp.write(requests.get(url).text)
+
+# 下载并设置各个镜像的Apache配置文件
+for mirror in mirrors_to_deploy:
+    domain = mirrors_settings[mirror]['domain']
+    this_mirror_folder = os.path.join(htdoc, mirror)
+
+    for conf_name in this_server['site_unique_configs']:
+        url = this_server['configs'][conf_name]['url']
+        file_path = this_server['configs'][conf_name]['file_path']
+
+        print("downloading: ", mirror, conf_name)
+
+        conf = requests.get(url).text
+
+        # 因为Apache conf里面有 {Ascii字符} 这种结构, 与python的string format冲突
+        # 这边只能手动format
+        for key, value in [
+            ('domain', domain),
+            ('mirror_name', mirror),
+            ('path_to_wsgi_py', os.path.join(this_mirror_folder, 'wsgi.py')),
+        ]:
+            conf = conf.replace("{{%s}}" % key, value)
+
+        with open(os.path.join(config_root, file_path), 'w', encoding='utf-8') as fp:
+            fp.write(conf)
+
+# 最后重启一下apache
+print("Restarting apache2")
+subprocess.call('service apache2 restart', shell=True)
+
+# ####### 完成 ########
+print("Completed.")
+# 最后打印一遍配置
+print("------------ mirrors ------------")
+for mirror in mirrors_to_deploy:
+    print("Mirror:{mirror} Domain:{domain}".format(mirror=mirror, domain=mirrors_settings[mirror]['domain']))
+
+print("\nFor more information, please view zmirror's github: ", __ZMIRROR_PROJECT_URL__)
