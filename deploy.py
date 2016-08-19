@@ -193,6 +193,8 @@ input 0-5: """.format(
 
     # 输入镜像对应的域名, 要求已经在DNS设置中用一个A记录指向了本服务器
     domain = input("Please input your domain for this mirror: ")
+    domain = domain.strip(' /.\t').replace('https://', '').replace('http://', '')  # 修剪
+
     # 初步检验域名是否已经被正确设置
     try:
         domain_ip = socket.gethostbyname(domain)
