@@ -233,6 +233,7 @@ this machine's ip is: {local_ip}
         print("Mirror:{mirror_type} unchecked.")
     else:
         mirrors_to_deploy.append(mirror_type)
+        mirrors_settings[mirror_type]['domain'] = domain
         print("Mirror:{mirror_type} Domain:{domain} checked".format(mirror_type=mirror_type, domain=domain))
 
     logging.debug(mirrors_to_deploy)
