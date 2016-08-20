@@ -12,7 +12,7 @@ import traceback
 from urllib.parse import urljoin
 
 __AUTHOR__ = 'Aploium <i@z.codes>'
-__VERSION__ = '0.5.0'
+__VERSION__ = '0.5.1'
 __ZMIRROR_PROJECT_URL__ = 'https://github.com/aploium/zmirror/'
 __ZMIRROR_GIT_URL__ = 'https://github.com/aploium/zmirror.git'
 __ONKEY_PROJECT_URL__ = 'https://github.com/aploium/zmirror-onekey/'
@@ -503,3 +503,5 @@ for mirror in mirrors_to_deploy:
     print("Mirror: {mirror} URL: https://{domain}/".format(mirror=mirror, domain=mirrors_settings[mirror]['domain']))
 
 print("\nFor more information, please view zmirror's github: ", __ZMIRROR_PROJECT_URL__)
+print("Contribution and Issues are more than welcomed.")
+print("btw, if you feeling good, I'll be grateful for your Star in github :)")
