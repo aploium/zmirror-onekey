@@ -50,10 +50,21 @@ sudo python3 deploy.py
 
     当然有, 请戳 [zmirror-demo](https://github.com/aploium/zmirror#demo)  
 
-2. **安装后的 let's encrypt 目录在哪? 证书在哪?**  
+2. **安装完成后各个程序的文件夹在哪?**  
+
+    * *zmirror*  
+        安装在 `/var/www/镜像名` 文件夹下  
+        镜像名为每个镜像的名字, 比如YoutubePC就是 `/var/www/youtubePC`  
+    * *let's encrypt*  
+        本体在: `/etc/certbot/`  
+        申请到的证书位置, 请看 [certbot文档-where-are-my-certificates](https://certbot.eff.org/docs/using.html#where-are-my-certificates)
+    * *Apache*  
+        Apache的配置文件在`/etc/apache2/`下  
+        其中各个站点的配置文件在`/etc/apache2/sites-enabled/`  
     
-    let's encrypt本体在: `/etc/certbot/`
-    申请到的证书位置, 请看 [certbot文档-where-are-my-certificates](https://certbot.eff.org/docs/using.html#where-are-my-certificates)
+        Apache日志文件在`/var/log/apache2/镜像名_后缀.log`  
+        后缀为 _error 的日志文件中, 同时包含了stdout的输出(无论是否是错误), 对debug会有帮助  
+        
 
 3. **为什么安装的是Apache2, 而不是Nginx, 我可以选择吗?**  
     
