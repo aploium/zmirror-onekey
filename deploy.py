@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # coding=utf-8
 import os
 import sys
@@ -149,7 +150,8 @@ else:
 
 print("[zmirror] Dependencies Installation Completed")
 
-print('\n\n\n\n[zmirror] Now we need some information:')
+print('\n\n\n-------------------------------\n'
+      '[zmirror] Now we need some information:')
 
 mirrors_to_deploy = []
 
@@ -158,6 +160,7 @@ while _input:  # 不断循环输入, 因为用户可能想要安装多个镜像
     _input = input(
         """Please select mirror you want to deploy?
 select one mirror a time, you could select zero or more mirror(s)
+
 1. Google (include scholar, image, zh_wikipedia) {google}
 2. twitter (PC) {twitterPC}
 3. twitter (Mobile) {twitterMobile}
@@ -270,11 +273,6 @@ if not mirrors_to_deploy:
 email = input('Please input your email (because letsencrypt requires an email for certification)\n') or 'none@donotexist.com'
 
 print('Your email:', email)
-print('You need one domain for each mirror, please input your domain (eg: g.mydomain.com):\n'
-      'And set these domain(s)\'s DNS record to this machine\n'
-      'domain for every site MUST NOT BE SAME\n'
-      'don\'t have an domain? Don\'t panic. Please send an email to the author (aploium email: i@z.codes), '
-      'and he will be happily to give you some domains(free)\n')
 
 # 最后确认一遍设置
 print('Now, we are going to install, please check your settings here:')
@@ -282,7 +280,7 @@ print("Email: " + email)
 for mirror in mirrors_to_deploy:
     print("Mirror:{mirror} Domain:{domain}".format(mirror=mirror, domain=mirrors_settings[mirror]['domain']))
 
-if input('really continue (Y/n)? ') in ('N', 'No', 'n', 'no', 'not', 'none'):
+if input('Are these settings correct (Y/n)? ') in ('N', 'No', 'n', 'no', 'not', 'none'):
     print('installation aborted.')
     exit(5)
 
