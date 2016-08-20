@@ -81,7 +81,18 @@ sudo python3 deploy.py
     本安装脚本会在linux定时任务(crontab)中加入自动续期的脚本, 不用担心证书过期  
     即使自动续期脚本万一失效了, let's encrypt也会在快要过期时邮件通知你  
 
-7. **网速太慢?**
+7. **其他高级功能, 比如说CDN, 在哪?**
+
+    这个脚本只提供最基础的部署, 高级功能需要手动配置  
+    请看[config_default.py](https://github.com/aploium/zmirror/blob/master/config_default.py)和[custom_func.sample.py](https://github.com/aploium/zmirror/blob/master/custom_func.sample.py)中的说明  
+    
+    > **警告**  
+    > 如果你想要修改`config_default.py`中的某项设置, 请不要直接修改  
+    > 而应该将它复制到`config.py`中, 然后修改`config.py`里的设置  
+    > `config.py`中的设置会覆盖掉`config_default.py`中的同名设置  
+    > 除非你是开发者, 否则无论如何都不应该修改`config_default.py`  
+
+8. **网速太慢?**
 
     如果你的VPS提供商允许的话, 可以试试看[net-speeder](https://github.com/snooda/net-speeder)  
     
