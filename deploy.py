@@ -21,8 +21,8 @@ try:
     import requests
 except:
     print('package requests is required for this program, installing now')
-    subprocess.call('apt-get update && apt-get install python3 python3-pip -y && python3 -m pip install -U requests',
-                    shell=True)
+    subprocess.call('apt-get update && apt-get install python3 python3-pip -y', shell=True)
+    subprocess.call('python3 -m pip install -U requests', shell=True)
     try:
         import requests
     except:
@@ -57,14 +57,16 @@ server_configs = {
         ],
 
         "configs": {
-            "http_generic": {
-                "url": urljoin(__ONKEY_PROJECT_URL_CONTENT__, "configs/apache2-http.conf"),
-                "file_path": "conf-enabled/zmirror-http-redirection.conf",
-            },
             "apache_boilerplate": {
                 "url": urljoin(__ONKEY_PROJECT_URL_CONTENT__, "configs/apache2-boilerplate.conf"),
                 "file_path": "conf-enabled/zmirror-apache-boilerplate.conf",
             },
+
+            "http_generic": {
+                "url": urljoin(__ONKEY_PROJECT_URL_CONTENT__, "configs/apache2-http.conf"),
+                "file_path": "sites-enabled/zmirror-http-redirection.conf",
+            },
+
             "https": {
                 "url": urljoin(__ONKEY_PROJECT_URL_CONTENT__, "configs/apache2-https.conf"),
                 "file_path": "sites-enabled/zmirror-{mirror_name}-https.conf",
@@ -123,11 +125,9 @@ subprocess.call("""LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/apache2 &&
 apt-key update &&
 apt-get update &&
 apt-get upgrade -y &&
-apt-get install apache2 -y &&
-a2enmod rewrite mime include headers filter expires deflate autoindex setenvif ssl http2 &&
-apt-get install libapache2-mod-wsgi-py3 -y &&
-a2enmod wsgi
-""", shell=True)
+apt-get install apache2 -y""", shell=True)
+subprocess.call("""a2enmod rewrite mime include headers filter expires deflate autoindex setenvif ssl http2""", shell=True)
+subprocess.call("""apt-get install libapache2-mod-wsgi-py3 -y && a2enmod wsgi""", shell=True)
 
 # 安装和更新必须的python包
 subprocess.call('python3 -m pip install -U requests flask', shell=True)
@@ -415,6 +415,7 @@ for mirror in mirrors_to_deploy:
     for conf_name in this_server['site_unique_configs']:
         url = this_server['configs'][conf_name]['url']
         file_path = os.path.join(config_root, this_server['configs'][conf_name]['file_path'])
+        file_path = file_path.format(mirror_name=mirror, conf_name=conf_name)
 
         if os.path.exists(file_path):  # 若配置文件已存在则跳过
             print("Config {path} already exists, skipping".format(path=file_path))
