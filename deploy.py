@@ -10,7 +10,7 @@ from urllib.parse import urljoin
 import re
 
 __AUTHOR__ = 'Aploium <i@z.codes>'
-__VERSION__ = '0.2.0'
+__VERSION__ = '0.3.0'
 __ZMIRROR_PROJECT_URL__ = 'https://github.com/aploium/zmirror/'
 __ZMIRROR_GIT_URL__ = 'https://github.com/aploium/zmirror.git'
 __ONKEY_PROJECT_URL__ = 'https://github.com/aploium/zmirror-onekey/'
@@ -116,7 +116,7 @@ subprocess.call('cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime', shell=Tru
 # 更新apt-get
 subprocess.call('apt-get update && apt-get upgrade -y', shell=True)
 # 安装必须的包
-subprocess.call('apt-get install git python3 python3-pip wget -y', shell=True)
+subprocess.call('apt-get install git python3 python3-pip wget curl -y', shell=True)
 # 安装Apache2和wsgi
 subprocess.call("""LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/apache2 &&
 apt-key update &&
@@ -139,7 +139,10 @@ if not os.path.exists('/etc/certbot/'):
     subprocess.call('git clone https://github.com/certbot/certbot.git', shell=True, cwd='/etc/')
     subprocess.call('chmod a+x /etc/certbot/certbot-auto', shell=True, cwd='/etc/certbot/')
     subprocess.call('service apache2 stop', shell=True)
-    subprocess.call('yes|./certbot-auto renew', shell=True, cwd='/etc/certbot/')
+    subprocess.call('yes|./certbot-auto renew --standalone '
+                    '--pre-hook "service apache2 stop" '
+                    '--post-hook "service apache2 start"',
+                    shell=True, cwd='/etc/certbot/')
 else:
     # 否则升级一下
     subprocess.call('git pull', shell=True, cwd='/etc/certbot/')
@@ -151,7 +154,7 @@ print('\n\n\n\n[zmirror] Now we need some information:')
 mirrors_to_deploy = []
 
 _input = -1
-while _input:
+while _input:  # 不断循环输入, 因为用户可能想要安装多个镜像
     _input = input(
         """Please select mirror you want to deploy?
 select one mirror a time, you could select zero or more mirror(s)
@@ -190,6 +193,7 @@ input 0-5: """.format(
               '-------------------------\n\n')
         continue
 
+    # 将数字选项转化为字符串
     mirror_type = {
         1: "google",
         2: "twitterPC",
@@ -197,6 +201,12 @@ input 0-5: """.format(
         4: "youtubePC",
         5: "instagram",
     }[_input]
+
+    # 在选项里, 镜像已存在, 则删去, 并且跳过下面的步骤
+    if mirror_type in mirrors_to_deploy:
+        mirrors_to_deploy.remove(mirror_type)
+        print("Mirror:{mirror_type} unchecked.".format(mirror_type=mirror_type))
+        continue
 
     # 输入镜像对应的域名, 要求已经在DNS设置中用一个A记录指向了本服务器
     while True:  # 这里面会检查输入的是否是三级域名
@@ -224,24 +234,32 @@ input 0-5: """.format(
         continue_anyway = input("Continue anyway? (y/N): ")
         if continue_anyway not in ('y', 'yes', 'Yes', 'YES'):
             continue  # 重新来
-    else:
-        if domain_ip != local_ip:  # 目标域名的IP不等于本地机器的IP
-            print("""Sorry, your domain({domain})'s ip does not equals to this machine's ip.
+
+    # 域名检验--目标域名的IP不等于本地机器的IP
+    if domain_ip != local_ip:
+        print("""Sorry, your domain({domain})'s ip does not equals to this machine's ip.
 domain's ip is: {domain_ip}
 this machine's ip is: {local_ip}
 """.format(domain=domain, domain_ip=domain_ip, local_ip=local_ip)
-                  )
-            continue_anyway = input("Continue anyway? (y/N): ")
-            if continue_anyway not in ('y', 'yes', 'Yes', 'YES'):
-                continue  # 重新来
+              )
+        continue_anyway = input("Continue anyway? (y/N): ")
+        if continue_anyway not in ('y', 'yes', 'Yes', 'YES'):
+            continue  # 重新来
 
-    if mirror_type in mirrors_to_deploy:  # 在选项里, 镜像已存在, 则删去
-        mirrors_to_deploy.remove(mirror_type)
-        print("Mirror:{mirror_type} unchecked.")
-    else:
-        mirrors_to_deploy.append(mirror_type)
-        mirrors_settings[mirror_type]['domain'] = domain
-        print("Mirror:{mirror_type} Domain:{domain} checked".format(mirror_type=mirror_type, domain=domain))
+    # 域名检验--域名是否重复
+    _dup_flag = False
+    for mirror in mirrors_to_deploy:
+        if mirrors_settings[mirror_type]['domain'] == domain:
+            print("Duplicated domain! conflict with mirror: " + mirror)
+            _dup_flag = True
+            break
+    if _dup_flag:
+        continue
+
+    # 将镜像添加到待安装列表中
+    mirrors_to_deploy.append(mirror_type)
+    mirrors_settings[mirror_type]['domain'] = domain
+    print("Mirror:{mirror_type} Domain:{domain} checked".format(mirror_type=mirror_type, domain=domain))
 
     logging.debug(mirrors_to_deploy)
 
@@ -275,11 +293,20 @@ print("Fetching HTTPS certifications")
 subprocess.call("service apache2 stop", shell=True)  # 先关掉apache
 for mirror in mirrors_to_deploy:
     domain = mirrors_settings[mirror]['domain']
+
+    if os.path.exists('/etc/letsencrypt/live/{domain}'.format(domain=domain)):
+        # 如果证书已存在, 则跳过
+        print("Certification for {domain} already exists, skipping".format(domain=domain))
+        continue
+
     print("Obtaining: {domain}".format(domain=domain))
     subprocess.call(
-        './certbot-auto certonly --agree-tos -t -m "{email}" --standalone -d "{domain}"'
-            .format(email=email, domain=domain),
-        shell=True, cwd='/etc/certbot/')
+        ('./certbot-auto certonly --agree-tos -t -m "{email}" --standalone -d "{domain}" '
+         '--pre-hook "/usr/sbin/service apache2 stop" '
+         '--post-hook "/usr/sbin/service apache2 start"'
+         ).format(email=email, domain=domain),
+        shell=True, cwd='/etc/certbot/'
+    )
 
     # 检查是否成功获取证书
     if not os.path.exists('/etc/letsencrypt/live/{domain}'.format(domain=domain)):
@@ -318,6 +345,21 @@ for pre_delete_file in this_server['pre_delete_files']:
 for mirror in mirrors_to_deploy:
     domain = mirrors_settings[mirror]['domain']
     this_mirror_folder = os.path.join(htdoc, mirror)
+
+    # 如果文件夹已存在, 则尝试升级
+    if os.path.exists(this_mirror_folder):
+        print(
+            ("Folder {folder} already exists, trying to upgrade [{mirror_name}]. "
+             "If you want to override, please delete that folder manually and run this script again"
+             ).format(folder=this_mirror_folder, mirror_name=mirror)
+        )
+        os.chdir(this_mirror_folder)
+        try:
+            subprocess.call('git pull', shell=True, cwd=this_mirror_folder)
+        except:
+            pass
+        continue
+
     # 将 zmirror 文件夹复制一份
     shutil.copytree(zmirror_source_folder, this_mirror_folder)
     # 更改文件夹所有者为 www-data (apache的用户)
@@ -357,9 +399,13 @@ os.chdir(config_root)
 for conf_name in this_server['common_configs']:
     assert isinstance(config_root, str)
     url = this_server['configs'][conf_name]['url']
-    file_path = this_server['configs'][conf_name]['file_path']
+    file_path = os.path.join(config_root, this_server['configs'][conf_name]['file_path'])
 
-    with open(os.path.join(config_root, file_path), 'w', encoding='utf-8') as fp:
+    if os.path.exists(file_path):  # 若配置文件已存在则跳过
+        print("Config {path} already exists, skipping".format(path=file_path))
+        continue
+
+    with open(file_path, 'w', encoding='utf-8') as fp:
         print("downloading: ", conf_name)
         fp.write(requests.get(url).text)
 
@@ -370,7 +416,11 @@ for mirror in mirrors_to_deploy:
 
     for conf_name in this_server['site_unique_configs']:
         url = this_server['configs'][conf_name]['url']
-        file_path = this_server['configs'][conf_name]['file_path']
+        file_path = os.path.join(config_root, this_server['configs'][conf_name]['file_path'])
+
+        if os.path.exists(file_path):  # 若配置文件已存在则跳过
+            print("Config {path} already exists, skipping".format(path=file_path))
+            continue
 
         print("downloading: ", mirror, conf_name)
 
@@ -385,10 +435,23 @@ for mirror in mirrors_to_deploy:
         ]:
             conf = conf.replace("{{%s}}" % key, value)
 
-        with open(os.path.join(config_root, file_path), 'w', encoding='utf-8') as fp:
+        with open(file_path, 'w', encoding='utf-8') as fp:
             fp.write(conf)
 
-# 最后重启一下apache
+# ##### Add linux cron script for letsencrypt auto renewal ######
+if not os.path.exists("/etc/cron.weekly/zmirror-letsencrypt-renew.sh"):  # 若脚本已存在则跳过
+    print("Adding cert auto renew script to `/etc/cron.weekly/zmirror-letsencrypt-renew.sh`")
+    cron_script = """#!/bin/bash
+cd /etc/certbot
+./certbot-auto renew -n --agree-tos --standalone --pre-hook "/usr/sbin/service apache2 stop" --post-hook "/usr/sbin/service apache2 start"
+exit 0
+"""
+    with open("/etc/cron.weekly/zmirror-letsencrypt-renew.sh", "w", encoding='utf-8') as fp:
+        fp.write(cron_script)
+
+    subprocess.call('/etc/cron.weekly/zmirror-letsencrypt-renew.sh', shell=True)
+
+# 重启一下apache
 print("Restarting apache2")
 subprocess.call('service apache2 restart', shell=True)
 
@@ -397,6 +460,6 @@ print("Completed.")
 # 最后打印一遍配置
 print("------------ mirrors ------------")
 for mirror in mirrors_to_deploy:
-    print("Mirror:{mirror} Domain:{domain}".format(mirror=mirror, domain=mirrors_settings[mirror]['domain']))
+    print("Mirror:{mirror} URL:https://{domain}/".format(mirror=mirror, domain=mirrors_settings[mirror]['domain']))
 
 print("\nFor more information, please view zmirror's github: ", __ZMIRROR_PROJECT_URL__)
