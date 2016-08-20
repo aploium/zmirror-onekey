@@ -63,13 +63,13 @@ sudo python3 deploy.py
         后缀为 _error 的日志文件中, 同时包含了stdout的输出(无论是否是错误), 对debug会有帮助  
         
 
-3. **为什么安装的是Apache2, 而不是Nginx, 我可以选择吗?**  
+3. **为什么安装的是Apache, 而不是Nginx, 我可以选择吗?**  
     
-    因为Apache2的wsgi对python更友好  
+    因为Apache的wsgi对python更友好  
     而且Nginx没有Visual Host功能  
     在性能上, 由于性能瓶颈是zmirror本身, 所以Apache和Nginx之间的性能差距可以被忽略  
     
-    目前一键脚本只能安装Apache2, 不支持Nginx, 也没有支持Nginx的计划, 如果需要Nginx, 请手动部署  
+    目前一键脚本只能安装Apache, 不支持Nginx, 也没有支持Nginx的计划, 如果需要Nginx, 请手动部署  
     手动部署可以参考 [zmirror wiki](https://github.com/aploium/zmirror/wiki)  
     当然, 如果你能写一份Nginx部署教程, 我会很感谢的~ :)  
 
