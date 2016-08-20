@@ -116,17 +116,29 @@ print()
 print('[zmirror] Installing some necessarily packages')
 # 设置本地时间为北京时间
 subprocess.call('cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime', shell=True)
+# 告诉apt-get要安静
+subprocess.call('export DEBIAN_FRONTEND=noninteractive', shell=True)
 # 更新apt-get
-subprocess.call('apt-get update && apt-get upgrade -y', shell=True)
+subprocess.call('apt-get update', shell=True)
 # 安装必须的包
 subprocess.call('apt-get install git python3 python3-pip wget curl -y', shell=True)
+# 按照本脚本必须的python包
+subprocess.call('python3 -m pip install -U distro', shell=True)
+
+import distro
+
 # 安装Apache2和wsgi
 subprocess.call("""LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/apache2 &&
 apt-key update &&
 apt-get update &&
-apt-get upgrade -y &&
 apt-get install apache2 -y""", shell=True)
 subprocess.call("""a2enmod rewrite mime include headers filter expires deflate autoindex setenvif ssl http2""", shell=True)
+
+# (可选) 更新一下各种包
+if not (distro.id() == 'ubuntu' and distro.version() == '14.04'):  # 系统不是ubuntu 14.04
+    # Ubuntu 14.04 执行本命令的时候会弹一个postfix的交互, 所以不执行
+    subprocess.call('apt-get upgrade -y', shell=True)
+
 subprocess.call("""apt-get install libapache2-mod-wsgi-py3 -y && a2enmod wsgi""", shell=True)
 
 # 安装和更新必须的python包
