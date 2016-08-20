@@ -296,8 +296,9 @@ print('Your email:', email)
 print('----------------------')
 print('Now, we are going to install, please check your settings here:')
 print("Email: " + email)
+print()
 for mirror in mirrors_to_deploy:
-    print("Mirror:{mirror} Domain:{domain}".format(mirror=mirror, domain=mirrors_settings[mirror]['domain']))
+    print("Mirror: {mirror} Domain: {domain}".format(mirror=mirror, domain=mirrors_settings[mirror]['domain']))
 
 if input('Are these settings correct (Y/n)? ') in ('N', 'No', 'n', 'no', 'not', 'none'):
     print('installation aborted.')
@@ -479,6 +480,6 @@ print("Completed.")
 # 最后打印一遍配置
 print("------------ mirrors ------------")
 for mirror in mirrors_to_deploy:
-    print("Mirror:{mirror} URL:https://{domain}/".format(mirror=mirror, domain=mirrors_settings[mirror]['domain']))
+    print("Mirror: {mirror} URL: https://{domain}/".format(mirror=mirror, domain=mirrors_settings[mirror]['domain']))
 
 print("\nFor more information, please view zmirror's github: ", __ZMIRROR_PROJECT_URL__)
