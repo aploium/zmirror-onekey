@@ -94,6 +94,8 @@ sudo python3 deploy.py
     这个脚本只提供最基础的部署, 高级功能需要手动配置  
     请看[config_default.py](https://github.com/aploium/zmirror/blob/master/config_default.py)和[custom_func.sample.py](https://github.com/aploium/zmirror/blob/master/custom_func.sample.py)中的说明  
     
+    如果想用CDN, 可以看这个教程[使用七牛作为zmirror镜像CDN](https://github.com/aploium/zmirror/wiki/%E4%BD%BF%E7%94%A8%E4%B8%83%E7%89%9B%E4%BD%9C%E4%B8%BAzmirror%E9%95%9C%E5%83%8F%E7%9A%84CDN)  
+    
     > **警告**  
     > 如果你想要修改`config_default.py`中的某项设置, 请不要直接修改  
     > 而应该将它复制到`config.py`中, 然后修改`config.py`里的设置  
