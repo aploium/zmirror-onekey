@@ -26,3 +26,8 @@ sudo python3 deploy.py
 ```
 
 然后按照脚本给予的提示继续  
+
+### 安装视频
+请点击下面的图片  
+"视频"中的文字可以被选中和复制  
+[![asciicast](https://asciinema.org/a/83322.png)](https://asciinema.org/a/83322)
