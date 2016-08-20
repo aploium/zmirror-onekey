@@ -1,8 +1,8 @@
-# zmirror 一键部署脚本
+# [zmirror](https://github.com/aploium/zmirror) 一键部署脚本
 
-[zmirror](https://github.com/aploium/zmirror)  
+使用[zmirror](https://github.com/aploium/zmirror)快速部署镜像的脚本  
 
-## 前置要求
+## 前置需求
 
 1. 一台墙外VPS, OpenVZ/Xen/KVM均可  
 
