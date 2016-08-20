@@ -1,5 +1,7 @@
 # zmirror 一键部署脚本
 
+[zmirror](https://github.com/aploium/zmirror)  
+
 ## 前置要求
 
 1. 一台墙外VPS, OpenVZ/Xen/KVM均可  
@@ -44,22 +46,39 @@ sudo python3 deploy.py
 
 ## FAQ
 
-1. 安装后的 let's encrypt 目录在哪? 证书在哪?
+1. **有没有部署完成的Demo?**  
+
+    当然有, 请戳 [zmirror-demo](https://github.com/aploium/zmirror#demo)  
+
+2. **安装后的 let's encrypt 目录在哪? 证书在哪?**  
     
     let's encrypt本体在: `/etc/certbot/`
     申请到的证书位置, 请看 [certbot文档-where-are-my-certificates](https://certbot.eff.org/docs/using.html#where-are-my-certificates)
 
-2. 为什么安装的是Apache2, 而不是Nginx, 我可以选择吗?
+3. **为什么安装的是Apache2, 而不是Nginx, 我可以选择吗?**  
     
     因为Apache2的wsgi对python更友好  
     而且Nginx没有Visual Host功能  
     在性能上, 由于性能瓶颈是zmirror本身, 所以Apache和Nginx之间的性能差距可以被忽略  
+    
+    目前一键脚本只能安装Apache2, 不支持Nginx, 也没有支持Nginx的计划, 如果需要Nginx, 请手动部署  
+    手动部署可以参考 [zmirror wiki](https://github.com/aploium/zmirror/wiki)  
+    当然, 如果你能写一份Nginx部署教程, 我会很感谢的~ :)  
 
-3. 安装的Apache版本?
+4. **安装的Apache版本?**
     
     在Ubuntu中, 使用的是 PPA:ondrej/apache2 理论上应该是最新版, 或者接近最新版(2.4.23+)  
     在Debian8中, 使用系统的 apt-get 安装, 版本比较旧, 所以Debian不支持HTTP/2  
 
-4. Let's encrypt 证书自动更新?
+5. **Let's encrypt 证书自动更新?**
 
     安装脚本会自动创建定期更新证书的脚本, 脚本位置为 `/etc/cron.weekly/zmirror-letsencrypt-renew.sh`  
+
+6. **网速太慢?**
+
+    如果你的VPS提供商允许的话, 可以试试看[net-speeder](https://github.com/snooda/net-speeder)  
+    
+    或者换一个网速快的VPS, Demo站使用的VPS是[Ramnode](https://clientarea.ramnode.com/aff.php?aff=2990)  
+    服务器地点是LA(Los Angeles), 速度相当快.  
+    ps: 如果你也想试试看的话, 请点击[这个链接](https://clientarea.ramnode.com/aff.php?aff=2990)进入, 这里有我的推广小尾巴, 你买了的话我会有一丢丢(好像是10%)分成  
+    ramnode允许使用net-speeder  
