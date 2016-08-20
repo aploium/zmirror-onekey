@@ -74,7 +74,14 @@ sudo python3 deploy.py
 
     安装脚本会自动创建定期更新证书的脚本, 脚本位置为 `/etc/cron.weekly/zmirror-letsencrypt-renew.sh`  
 
-6. **网速太慢?**
+6. **证书有效期为什么只有90天?**
+
+    主要是因为Let's encrypt认为, 当自动化证书部署被应用时, 90天足够了.  
+    具体可以看[这个官方说明](https://community.letsencrypt.org/t/pros-and-cons-of-90-day-certificate-lifetimes/4621)(可能需要自备梯子)  
+    本安装脚本会在linux定时任务(crontab)中加入自动续期的脚本, 不用担心证书过期  
+    即使自动续期脚本万一失效了, let's encrypt也会在快要过期时邮件通知你  
+
+7. **网速太慢?**
 
     如果你的VPS提供商允许的话, 可以试试看[net-speeder](https://github.com/snooda/net-speeder)  
     
@@ -82,3 +89,4 @@ sudo python3 deploy.py
     服务器地点是LA(Los Angeles), 速度相当快.  
     ps: 如果你也想试试看的话, 请点击[这个链接](https://clientarea.ramnode.com/aff.php?aff=2990)进入, 这里有我的推广小尾巴, 你买了的话我会有一丢丢(好像是10%)分成  
     ramnode允许使用net-speeder  
+
