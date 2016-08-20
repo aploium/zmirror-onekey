@@ -2,16 +2,17 @@
 # coding=utf-8
 import os
 import sys
+from time import sleep
+import re
 import socket
 import shutil
 import subprocess
 import logging
 import traceback
 from urllib.parse import urljoin
-import re
 
 __AUTHOR__ = 'Aploium <i@z.codes>'
-__VERSION__ = '0.3.0'
+__VERSION__ = '0.4.0'
 __ZMIRROR_PROJECT_URL__ = 'https://github.com/aploium/zmirror/'
 __ZMIRROR_GIT_URL__ = 'https://github.com/aploium/zmirror.git'
 __ONKEY_PROJECT_URL__ = 'https://github.com/aploium/zmirror-onekey/'
@@ -111,8 +112,9 @@ mirrors_settings = {
 print('OneKey deploy script for zmirror. version', __VERSION__)
 print('This script will automatically deploy mirror(s) using zmirror in your ubuntu')
 print('You could cancel this script in the config stage by precessing Ctrl-C')
-print('This Program Only Support Ubuntu 14.04/15.10/16.10+ (for now)')
+print('Installation will start after 1 second')
 print()
+sleep(1)
 
 # ################# 安装一些依赖包 ####################
 print('[zmirror] Installing some necessarily packages')
@@ -151,7 +153,10 @@ try:
 except:
     pass  # 允许安装失败
 
-print('[zmirror] Installing letsencrypt')
+print('[zmirror] Dependency packages install completed')
+print('[zmirror] Installing letsencrypt...')
+sleep(1)
+
 if not os.path.exists('/etc/certbot/'):
     # certbot 不存在, 则安装
     subprocess.call('git clone https://github.com/certbot/certbot.git', shell=True, cwd='/etc/')
@@ -165,7 +170,8 @@ else:
     # 否则升级一下
     subprocess.call('git pull', shell=True, cwd='/etc/certbot/')
 
-print("[zmirror] Dependencies Installation Completed")
+print("[zmirror] let's encrypt Installation Completed")
+sleep(1)
 
 print('\n\n\n-------------------------------\n'
       '[zmirror] Now we need some information:')
@@ -288,7 +294,7 @@ if not mirrors_to_deploy:
     print('[ERROR] you didn\'t select any mirror.\nAbort installation')
     exit(4)
 
-email = input('Please input your email (because letsencrypt requires an email for certification)\n') or 'none@donotexist.com'
+email = input('Please input your email (because letsencrypt requires an email for certification)\n')
 
 print('Your email:', email)
 
@@ -337,7 +343,8 @@ for mirror in mirrors_to_deploy:
 subprocess.call("service apache2 start", shell=True)  # 重新启动apache
 
 # ####### 安装zmirror自身 #############
-print('Obtain SSL cert successfully, now installing zmirror itself')
+print('[zmirror] Successfully obtain SSL cert, now installing zmirror itself...')
+sleep(1)
 
 this_server = server_configs['apache']
 htdoc = this_server['htdoc']
@@ -408,9 +415,13 @@ for mirror in mirrors_to_deploy:
         fp.write(content)  # 回写
 
 shutil.rmtree(zmirror_source_folder)  # 删除无用的 zmirror 文件夹
-print("zmirror folders deploy completed")
+
+print("[zmirror] zmirror program folders deploy completed")
 
 # ############# 配置Apache ###############
+print("[zmirror] Now installing apache configs...")
+sleep(0.5)
+
 os.chdir(config_root)
 
 # 下载通用配置文件
