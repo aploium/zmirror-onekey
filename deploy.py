@@ -152,7 +152,7 @@ if not os.path.exists('/etc/certbot/'):
     subprocess.call('git clone https://github.com/certbot/certbot.git', shell=True, cwd='/etc/')
     subprocess.call('chmod a+x /etc/certbot/certbot-auto', shell=True, cwd='/etc/certbot/')
     subprocess.call('service apache2 stop', shell=True)
-    subprocess.call('yes|./certbot-auto renew --standalone '
+    subprocess.call('./certbot-auto renew --agree-tos -n --standalone '
                     '--pre-hook "service apache2 stop" '
                     '--post-hook "service apache2 start"',
                     shell=True, cwd='/etc/certbot/')
@@ -313,7 +313,7 @@ for mirror in mirrors_to_deploy:
 
     print("Obtaining: {domain}".format(domain=domain))
     subprocess.call(
-        ('./certbot-auto certonly --agree-tos -t -m "{email}" --standalone -d "{domain}" '
+        ('./certbot-auto certonly -n --agree-tos -t -m "{email}" --standalone -d "{domain}" '
          '--pre-hook "/usr/sbin/service apache2 stop" '
          '--post-hook "/usr/sbin/service apache2 start"'
          ).format(email=email, domain=domain),
