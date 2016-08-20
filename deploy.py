@@ -12,11 +12,13 @@ import traceback
 from urllib.parse import urljoin
 
 __AUTHOR__ = 'Aploium <i@z.codes>'
-__VERSION__ = '0.4.0'
+__VERSION__ = '0.5.0'
 __ZMIRROR_PROJECT_URL__ = 'https://github.com/aploium/zmirror/'
 __ZMIRROR_GIT_URL__ = 'https://github.com/aploium/zmirror.git'
 __ONKEY_PROJECT_URL__ = 'https://github.com/aploium/zmirror-onekey/'
 __ONKEY_PROJECT_URL_CONTENT__ = 'https://raw.githubusercontent.com/aploium/zmirror-onekey/master/'
+
+subprocess.call('export LC_ALL=C.UTF-8', shell=True)  # 设置bash环境为utf-8
 
 subprocess.call('apt-get update && apt-get install python3 python3-pip -y', shell=True)
 
@@ -125,17 +127,24 @@ subprocess.call('export DEBIAN_FRONTEND=noninteractive', shell=True)
 # 更新apt-get
 subprocess.call('apt-get update', shell=True)
 # 安装必须的包
-subprocess.call('apt-get install git python3 python3-pip wget curl -y', shell=True)
+subprocess.call('apt-get install git python3 python3-pip wget curl  -y', shell=True)
+# 安装非必须的包, 如果安装了, 则可以启用http2
+subprocess.call('apt-get install software-properties-common python-software-properties -y', shell=True)
 # 按照本脚本必须的python包
 subprocess.call('python3 -m pip install -U distro', shell=True)
 
 import distro
 
-# 安装Apache2和wsgi
-subprocess.call("""LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/apache2 &&
+if distro.id() == 'ubuntu':
+    # 安装高版本的Apache2(支持http2), 仅限ubuntu
+    subprocess.call("""LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/apache2 &&
 apt-key update &&
 apt-get update &&
 apt-get install apache2 -y""", shell=True)
+elif distro.id() == 'debian':
+    # debian 只有低版本的可以用
+    subprocess.call("apt-get install apache2 -y", shell=True)
+
 subprocess.call("""a2enmod rewrite mime include headers filter expires deflate autoindex setenvif ssl http2""", shell=True)
 
 # (可选) 更新一下各种包
