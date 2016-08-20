@@ -84,7 +84,7 @@ sudo python3 deploy.py
 
 6. **证书有效期为什么只有90天?**
 
-    主要是因为Let's encrypt认为, 当自动化证书部署被应用时, 90天足够了.  
+    主要是因为Let's encrypt认为, 证书的申请和部署可以自动化时, 90天足够了.  
     具体可以看[这个官方说明](https://community.letsencrypt.org/t/pros-and-cons-of-90-day-certificate-lifetimes/4621)(可能需要自备梯子)  
     本安装脚本会在linux定时任务(crontab)中加入自动续期的脚本, 不用担心证书过期  
     即使自动续期脚本万一失效了, let's encrypt也会在快要过期时邮件通知你  
