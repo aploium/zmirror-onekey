@@ -17,18 +17,20 @@ __ZMIRROR_GIT_URL__ = 'https://github.com/aploium/zmirror.git'
 __ONKEY_PROJECT_URL__ = 'https://github.com/aploium/zmirror-onekey/'
 __ONKEY_PROJECT_URL_CONTENT__ = 'https://raw.githubusercontent.com/aploium/zmirror-onekey/master/'
 
+subprocess.call('apt-get update && apt-get install python3 python3-pip -y', shell=True)
+
+# for some old version Linux, pip has bugs, causing:
+# ImportError: cannot import name 'IncompleteRead'
+# so we need to upgrade pip first
+subprocess.call('easy_install3 -U pip', shell=True)
+
+subprocess.call('python3 -m pip install -U requests', shell=True)
+
 try:
     import requests
 except:
-    print('package requests is required for this program, installing now')
-    subprocess.call('apt-get update && apt-get install python3 python3-pip -y', shell=True)
-    subprocess.call('python3 -m pip install -U requests', shell=True)
-    try:
-        import requests
-    except:
-        print('Could not install requests, program exit')
-        exit(1)
-    print('--------------------------')
+    print('Could not install requests, program exit')
+    exit(1)
 
 logging.basicConfig(
     level=logging.DEBUG,
