@@ -157,6 +157,7 @@ mirrors_to_deploy = []
 
 _input = -1
 while _input:  # 不断循环输入, 因为用户可能想要安装多个镜像
+    print('----------------------')
     _input = input(
         """Please select mirror you want to deploy?
 select one mirror a time, you could select zero or more mirror(s)
@@ -275,6 +276,7 @@ email = input('Please input your email (because letsencrypt requires an email fo
 print('Your email:', email)
 
 # 最后确认一遍设置
+print('----------------------')
 print('Now, we are going to install, please check your settings here:')
 print("Email: " + email)
 for mirror in mirrors_to_deploy:
