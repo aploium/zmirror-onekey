@@ -128,9 +128,15 @@ subprocess.call('export DEBIAN_FRONTEND=noninteractive', shell=True)
 subprocess.call('apt-get update', shell=True)
 # 安装必须的包
 subprocess.call('apt-get install git python3 python3-pip wget curl  -y', shell=True)
-# 安装非必须的包, 如果安装了, 则可以启用http2
-subprocess.call('apt-get install software-properties-common python-software-properties -y', shell=True)
-# 按照本脚本必须的python包
+# 安装非必须的包
+try:
+    # 更新一下openssl
+    subprocess.call('apt-get install openssl -y', shell=True)
+    # 如果安装了, 则可以启用http2
+    subprocess.call('apt-get install software-properties-common python-software-properties -y', shell=True)
+except:
+    pass
+# 安装本脚本必须的python包
 subprocess.call('python3 -m pip install -U distro', shell=True)
 
 import distro
