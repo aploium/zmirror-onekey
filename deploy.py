@@ -447,6 +447,7 @@ exit 0
     with open("/etc/cron.weekly/zmirror-letsencrypt-renew.sh", "w", encoding='utf-8') as fp:
         fp.write(cron_script)
 
+    subprocess.call('chmod +x /etc/cron.weekly/zmirror-letsencrypt-renew.sh', shell=True)
     subprocess.call('/etc/cron.weekly/zmirror-letsencrypt-renew.sh', shell=True)
 
 # 重启一下apache
