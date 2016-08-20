@@ -146,7 +146,10 @@ subprocess.call("""apt-get install libapache2-mod-wsgi-py3 -y && a2enmod wsgi"""
 # 安装和更新必须的python包
 subprocess.call('python3 -m pip install -U requests flask', shell=True)
 # 安装和更新非必须, 但是有好处的python包
-subprocess.call('python3 -m pip install -U chardet fastcache cchardet', shell=True)
+try:
+    subprocess.call('python3 -m pip install -U chardet fastcache cchardet', shell=True)
+except:
+    pass  # 允许安装失败
 
 print('[zmirror] Installing letsencrypt')
 if not os.path.exists('/etc/certbot/'):
