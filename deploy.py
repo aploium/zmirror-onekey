@@ -134,9 +134,15 @@ subprocess.call('python3 -m pip install -U requests flask', shell=True)
 subprocess.call('python3 -m pip install -U chardet fastcache cchardet', shell=True)
 
 print('[zmirror] Installing letsencrypt')
-subprocess.call('git clone https://github.com/certbot/certbot.git', shell=True, cwd='/etc/')
-subprocess.call('chmod a+x /etc/certbot/certbot-auto', shell=True, cwd='/etc/certbot/')
-subprocess.call('yes|./certbot-auto upgrade', shell=True, cwd='/etc/certbot/')
+if not os.path.exists('/etc/certbot/'):
+    # certbot 不存在, 则安装
+    subprocess.call('git clone https://github.com/certbot/certbot.git', shell=True, cwd='/etc/')
+    subprocess.call('chmod a+x /etc/certbot/certbot-auto', shell=True, cwd='/etc/certbot/')
+    subprocess.call('service apache2 stop', shell=True)
+    subprocess.call('yes|./certbot-auto renew', shell=True, cwd='/etc/certbot/')
+else:
+    # 否则升级一下
+    subprocess.call('git pull', shell=True, cwd='/etc/certbot/')
 
 print("[zmirror] Dependencies Installation Completed")
 
