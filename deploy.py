@@ -12,7 +12,7 @@ import traceback
 from urllib.parse import urljoin
 
 __AUTHOR__ = 'Aploium <i@z.codes>'
-__VERSION__ = '0.6.0'
+__VERSION__ = '0.7.0'
 __ZMIRROR_PROJECT_URL__ = 'https://github.com/aploium/zmirror/'
 __ZMIRROR_GIT_URL__ = 'https://github.com/aploium/zmirror.git'
 __ONKEY_PROJECT_URL__ = 'https://github.com/aploium/zmirror-onekey/'
@@ -23,18 +23,24 @@ __REPORT_URLS__ = {
 }
 DEBUG = True
 
-subprocess.call('export LC_ALL=C.UTF-8', shell=True)  # 设置bash环境为utf-8
 
-subprocess.call('apt-get update && apt-get install python3 python3-pip -y', shell=True)
+def cmd(command, cwd=None, **kwargs):
+    """运行shell命令"""
+    return subprocess.check_call(command, shell=True, cwd=cwd or os.getcwd(), **kwargs)
+
+
+cmd('export LC_ALL=C.UTF-8')  # 设置bash环境为utf-8
+
+cmd('apt-get update && apt-get install python3 python3-pip -y')
 
 # for some old version Linux, pip has bugs, causing:
 # ImportError: cannot import name 'IncompleteRead'
 # so we need to upgrade pip first
-subprocess.call('easy_install3 -U pip', shell=True)
+cmd('easy_install3 -U pip')
 
 # 安装本脚本必须的python包
-subprocess.call('python3 -m pip install -U requests', shell=True)
-subprocess.call('python3 -m pip install -U distro', shell=True)
+cmd('python3 -m pip install -U requests')
+cmd('python3 -m pip install -U distro')
 
 import distro
 
@@ -175,46 +181,46 @@ print('[zmirror] Installing some necessarily packages')
 
 try:
     # 设置本地时间为北京时间
-    subprocess.call('cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime', shell=True)
+    cmd('cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime')
     # 告诉apt-get要安静
-    subprocess.call('export DEBIAN_FRONTEND=noninteractive', shell=True)
+    cmd('export DEBIAN_FRONTEND=noninteractive')
     # 更新apt-get
-    subprocess.call('apt-get update', shell=True)
+    cmd('apt-get update')
     # 安装必须的包
-    subprocess.call('apt-get install git python3 python3-pip wget curl  -y', shell=True)
+    cmd('apt-get install git python3 python3-pip wget curl  -y')
     # 安装非必须的包
     try:
         # 更新一下openssl
-        subprocess.call('apt-get install openssl -y', shell=True)
+        cmd('apt-get install openssl -y')
         # 如果安装了, 则可以启用http2
-        subprocess.call('apt-get install software-properties-common python-software-properties -y', shell=True)
+        cmd('apt-get install software-properties-common python-software-properties -y')
     except:
         pass
 
     if distro.id() == 'ubuntu':
         # 安装高版本的Apache2(支持http2), 仅限ubuntu
-        subprocess.call("""LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/apache2 &&
+        cmd("""LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/apache2 &&
     apt-key update &&
     apt-get update &&
-    apt-get install apache2 -y""", shell=True)
+    apt-get install apache2 -y""")
     elif distro.id() == 'debian':
         # debian 只有低版本的可以用
-        subprocess.call("apt-get install apache2 -y", shell=True)
+        cmd("apt-get install apache2 -y")
 
-    subprocess.call("""a2enmod rewrite mime include headers filter expires deflate autoindex setenvif ssl http2""", shell=True)
+    cmd("""a2enmod rewrite mime include headers filter expires deflate autoindex setenvif ssl http2""")
 
     # (可选) 更新一下各种包
     if not (distro.id() == 'ubuntu' and distro.version() == '14.04'):  # 系统不是ubuntu 14.04
         # Ubuntu 14.04 执行本命令的时候会弹一个postfix的交互, 所以不执行
-        subprocess.call('apt-get upgrade -y', shell=True)
+        cmd('apt-get upgrade -y')
 
-    subprocess.call("""apt-get install libapache2-mod-wsgi-py3 -y && a2enmod wsgi""", shell=True)
+    cmd("""apt-get install libapache2-mod-wsgi-py3 -y && a2enmod wsgi""")
 
     # 安装和更新必须的python包
-    subprocess.call('python3 -m pip install -U requests flask', shell=True)
+    cmd('python3 -m pip install -U requests flask')
     # 安装和更新非必须, 但是有好处的python包
     try:
-        subprocess.call('python3 -m pip install -U chardet fastcache cchardet', shell=True)
+        cmd('python3 -m pip install -U chardet fastcache cchardet')
     except:
         pass  # 允许安装失败
 
@@ -224,16 +230,16 @@ try:
 
     if not os.path.exists('/etc/certbot/'):
         # certbot 不存在, 则安装
-        subprocess.call('git clone https://github.com/certbot/certbot.git', shell=True, cwd='/etc/')
-        subprocess.call('chmod a+x /etc/certbot/certbot-auto', shell=True, cwd='/etc/certbot/')
-        subprocess.call('service apache2 stop', shell=True)
-        subprocess.call('./certbot-auto renew --agree-tos -n --standalone '
-                        '--pre-hook "service apache2 stop" '
-                        '--post-hook "service apache2 start"',
-                        shell=True, cwd='/etc/certbot/')
+        cmd('git clone https://github.com/certbot/certbot.git', cwd='/etc/')
+        cmd('chmod a+x /etc/certbot/certbot-auto', cwd='/etc/certbot/')
+        cmd('service apache2 stop')
+        cmd('./certbot-auto renew --agree-tos -n --standalone '
+            '--pre-hook "service apache2 stop" '
+            '--post-hook "service apache2 start"',
+            shell=True, cwd='/etc/certbot/')
     else:
         # 否则升级一下
-        subprocess.call('git pull', shell=True, cwd='/etc/certbot/')
+        cmd('git pull', cwd='/etc/certbot/')
 
     print("[zmirror] let's encrypt Installation Completed")
     sleep(1)
@@ -382,7 +388,7 @@ try:
 
     # 通过 letsencrypt 获取HTTPS证书
     print("Fetching HTTPS certifications")
-    subprocess.call("service apache2 stop", shell=True)  # 先关掉apache
+    cmd("service apache2 stop")  # 先关掉apache
     for mirror in mirrors_to_deploy:
         domain = mirrors_settings[mirror]['domain']
 
@@ -392,7 +398,7 @@ try:
             continue
 
         print("Obtaining: {domain}".format(domain=domain))
-        subprocess.call(
+        cmd(
             ('./certbot-auto certonly -n --agree-tos -t -m "{email}" --standalone -d "{domain}" '
              '--pre-hook "/usr/sbin/service apache2 stop" '
              '--post-hook "/usr/sbin/service apache2 start"'
@@ -408,7 +414,7 @@ try:
                   'Installation abort')
             exit(3)
         print("Succeed: {domain}".format(domain=domain))
-    subprocess.call("service apache2 start", shell=True)  # 重新启动apache
+    cmd("service apache2 start")  # 重新启动apache
 
     # ####### 安装zmirror自身 #############
     print('[zmirror] Successfully obtain SSL cert, now installing zmirror itself...')
@@ -420,7 +426,7 @@ try:
     assert isinstance(htdoc, str)
     assert isinstance(config_root, str)
     os.chdir(htdoc)
-    subprocess.call('git clone %s zmirror' % __ZMIRROR_GIT_URL__, shell=True, cwd=htdoc)
+    cmd('git clone %s zmirror' % __ZMIRROR_GIT_URL__, cwd=htdoc)
     zmirror_source_folder = os.path.join(htdoc, 'zmirror')
 
     # 预删除文件
@@ -448,7 +454,7 @@ try:
             )
             os.chdir(this_mirror_folder)
             try:
-                subprocess.call('git pull', shell=True, cwd=this_mirror_folder)
+                cmd('git pull', cwd=this_mirror_folder)
             except:
                 pass
             continue
@@ -547,12 +553,12 @@ try:
         with open("/etc/cron.weekly/zmirror-letsencrypt-renew.sh", "w", encoding='utf-8') as fp:
             fp.write(cron_script)
 
-        subprocess.call('chmod +x /etc/cron.weekly/zmirror-letsencrypt-renew.sh', shell=True)
-        subprocess.call('/etc/cron.weekly/zmirror-letsencrypt-renew.sh', shell=True)
+        cmd('chmod +x /etc/cron.weekly/zmirror-letsencrypt-renew.sh')
+        cmd('/etc/cron.weekly/zmirror-letsencrypt-renew.sh')
 
     # 重启一下apache
     print("Restarting apache2")
-    subprocess.call('service apache2 restart', shell=True)
+    cmd('service apache2 restart')
 
 except:
     onekey_report('error', traceback_str=traceback.format_exc(), installing_mirror=mirrors_to_deploy)
