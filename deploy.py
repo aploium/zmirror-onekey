@@ -69,7 +69,7 @@ def onekey_report(report_type="success", installing_mirror=None, traceback_str=N
     try:
         requests.post(__REPORT_URLS__[report_type], data=data)
     except:
-        pass
+        traceback.print_exc()
 
 
 try:
