@@ -21,6 +21,7 @@ __REPORT_URLS__ = {
     "error": "https://report.zmirror.org/onekey/log/error",
     "success": "https://report.zmirror.org/onekey/log/success",
 }
+DEBUG = True
 
 subprocess.call('export LC_ALL=C.UTF-8', shell=True)  # 设置bash环境为utf-8
 
@@ -66,10 +67,17 @@ def onekey_report(report_type="success", installing_mirror=None, traceback_str=N
     except:
         pass
 
+    if DEBUG:
+        print(__REPORT_URLS__[report_type], data)
+
     try:
-        requests.post(__REPORT_URLS__[report_type], data=data)
+        r = requests.post(__REPORT_URLS__[report_type], data=data)
     except:
-        traceback.print_exc()
+        if DEBUG:
+            traceback.print_exc()
+    else:
+        if DEBUG:
+            print(r.text, r.headers, r.request.body)
 
 
 try:
@@ -78,10 +86,11 @@ except:
     print('Could not install requests, program exit')
     exit(1)
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='[%(levelname)s %(asctime)s %(funcName)s] %(message)s',
-)
+if DEBUG:
+    logging.basicConfig(
+        level=logging.NOTSET,
+        format='[%(levelname)s %(asctime)s %(funcName)s] %(message)s',
+    )
 
 if sys.platform != 'linux':
     print('This program can ONLY be used in debian-like Linux (debian, ubuntu and some others)')
