@@ -446,19 +446,15 @@ try:
         domain = mirrors_settings[mirror]['domain']
         this_mirror_folder = os.path.join(htdoc, mirror)
 
-        # 如果文件夹已存在, 则尝试升级
+        # 如果文件夹已存在, 则报错
         if os.path.exists(this_mirror_folder):
             print(
-                ("Folder {folder} already exists, trying to upgrade [{mirror_name}]. "
+                ("Folder {folder} already exists."
                  "If you want to override, please delete that folder manually and run this script again"
-                 ).format(folder=this_mirror_folder, mirror_name=mirror)
+                 ).format(folder=this_mirror_folder)
             )
-            os.chdir(this_mirror_folder)
-            try:
-                cmd('git pull', cwd=this_mirror_folder)
-            except:
-                pass
-            continue
+            raise FileExistsError("Folder {folder} for mirror [{mirror_name}] already exists.".format(
+                folder=this_mirror_folder, mirror_name=mirror))
 
         # 将 zmirror 文件夹复制一份
         shutil.copytree(zmirror_source_folder, this_mirror_folder)
