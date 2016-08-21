@@ -21,6 +21,7 @@ __REPORT_URLS__ = {
     "error": "https://report.zmirror.org/onekey/log/error",
     "success": "https://report.zmirror.org/onekey/log/success",
 }
+
 DEBUG = '--debug' in sys.argv
 
 
