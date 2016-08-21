@@ -21,7 +21,7 @@ __REPORT_URLS__ = {
     "error": "https://report.zmirror.org/onekey/log/error",
     "success": "https://report.zmirror.org/onekey/log/success",
 }
-DEBUG = True
+DEBUG = '--debug' in sys.argv
 
 
 def cmd(command, cwd=None, **kwargs):
@@ -236,7 +236,7 @@ try:
         cmd('./certbot-auto renew --agree-tos -n --standalone '
             '--pre-hook "service apache2 stop" '
             '--post-hook "service apache2 start"',
-            shell=True, cwd='/etc/certbot/')
+            cwd='/etc/certbot/')
     else:
         # 否则升级一下
         cmd('git pull', cwd='/etc/certbot/')
@@ -403,7 +403,7 @@ try:
              '--pre-hook "/usr/sbin/service apache2 stop" '
              '--post-hook "/usr/sbin/service apache2 start"'
              ).format(email=email, domain=domain),
-            shell=True, cwd='/etc/certbot/'
+            cwd='/etc/certbot/'
         )
 
         # 检查是否成功获取证书
