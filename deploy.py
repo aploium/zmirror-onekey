@@ -336,6 +336,9 @@ try:
             continue_anyway = input("Continue anyway? (y/N): ")
             if continue_anyway not in ('y', 'yes', 'Yes', 'YES'):
                 continue  # 重新来
+            else:
+                # 仍然继续的话, 把domain_ip当做local_ip
+                domain_ip = local_ip
 
         # 域名检验--目标域名的IP不等于本地机器的IP
         if domain_ip != local_ip:
