@@ -365,8 +365,9 @@ try:
             continue
 
         # 输入镜像对应的域名, 要求已经在DNS设置中用一个A记录指向了本服务器
+        print()  # 打印一个空行
         while True:  # 这里面会检查输入的是否是三级域名
-            domain = input("Please input your domain for this mirror: ")
+            domain = input("Please input your domain for {mirror_type}: ".format(mirror_type=mirror_type))
             domain = domain.strip(' /.\t').replace('https://', '').replace('http://', '')  # 修剪
             if domain.count('.') != 2:
                 if input(("Your domain [{domain}] is not an third-level domain, "
@@ -419,6 +420,7 @@ try:
         if already_have_cert:
             # 输入私钥
             while True:
+                print()  # 打印一个空行
                 private_key = input(
                     "Please input your SSL private key file path \n"
                     "which will be used for Apache's SSLCertificateKeyFile\n"
@@ -431,6 +433,7 @@ try:
 
             # 输入证书
             while True:
+                print()
                 cert = input(
                     "Please input your SSL cert file path \n"
                     "which will be used for Apache's SSLCertificateFile\n"
@@ -444,6 +447,7 @@ try:
 
             # 输入证书链
             while True:
+                print()
                 cert_chain = input(
                     "Please input your SSL cert chain file \n"
                     "which will be used for Apache's SSLCertificateChainFile\n"
@@ -475,6 +479,7 @@ try:
         print('[ERROR] you didn\'t select any mirror.\nAbort installation')
         exit(4)
 
+    print()
     email = input('Please input your email (because letsencrypt requires an email for certification)\n')
 
     print('Your email:', email)
@@ -487,6 +492,7 @@ try:
     for mirror in mirrors_to_deploy:
         print("Mirror: {mirror} Domain: {domain}".format(mirror=mirror, domain=mirrors_settings[mirror]['domain']))
 
+    print()
     if input('Are these settings correct (Y/n)? ') in ('N', 'No', 'n', 'no', 'not', 'none'):
         print('installation aborted.')
         exit(5)
