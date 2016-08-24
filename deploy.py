@@ -208,7 +208,12 @@ try:
         # debian 只有低版本的可以用
         cmd("apt-get install apache2 -y")
 
-    cmd("""a2enmod rewrite mime include headers filter expires deflate autoindex setenvif ssl http2""")
+    cmd("""a2enmod rewrite mime include headers filter expires deflate autoindex setenvif ssl""")
+
+    try:
+        cmd("a2enmod http2")
+    except:
+        print("[Warning!] your server does not support http2")
 
     # (可选) 更新一下各种包
     if not (distro.id() == 'ubuntu' and distro.version() == '14.04'):  # 系统不是ubuntu 14.04
@@ -572,6 +577,10 @@ print("Completed.")
 print("------------ mirrors ------------")
 for mirror in mirrors_to_deploy:
     print("Mirror: {mirror} URL: https://{domain}/".format(mirror=mirror, domain=mirrors_settings[mirror]['domain']))
+
+if distro.id() == 'debian' or distro.id() == 'ubuntu' and distro.version() == '14.04':
+    print("[WARING] your system does NOT support HTTP/2! HTTP/2 would not be available\n"
+          "If you want to use HTTP/2, please use Ubuntu 14.04/15.10/16.04")
 
 print("\nFor more information, please view zmirror's github: ", __ZMIRROR_PROJECT_URL__)
 print("Contribution and Issues are more than welcomed.")
