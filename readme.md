@@ -7,7 +7,7 @@
 1. 一台墙外VPS, OpenVZ/Xen/KVM均可  
 2. 操作系统:    
     * 支持的操作系统:  
-        * Ubuntu 14.04/15.04/15.10/16.04+  
+        * Ubuntu 14.04/15.04(不支持HTTP2)/15.10/16.04+  
         * Debian 8 (不支持HTTP/2)  
     * 推荐的操作系统:  
         * Ubuntu 16.04 x86_64
@@ -38,7 +38,7 @@ sudo python3 deploy.py
 * 支持一次部署多个镜像, 支持同VPS多镜像  
 * 自动安装 [let's encrypt](https://letsencrypt.org/) 并申请证书, 启用HTTPS  
 * 自动添加 let's encrypt 的定期renew脚本到crontab  
-* 启用[HTTP/2](https://zh.wikipedia.org/wiki/HTTP/2) ps:Debian8不支持HTTP/2  
+* 启用[HTTP/2](https://zh.wikipedia.org/wiki/HTTP/2) ps:Debian8和Ubuntu15.04不支持HTTP/2  
 * 启用[HSTS](https://zh.wikipedia.org/zh-cn/HTTP%E4%B8%A5%E6%A0%BC%E4%BC%A0%E8%BE%93%E5%AE%89%E5%85%A8)  
 
 ## FAQ
