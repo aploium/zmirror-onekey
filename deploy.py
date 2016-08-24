@@ -193,18 +193,23 @@ try:
     try:
         # 更新一下openssl
         cmd('apt-get install openssl -y')
+    except:
+        pass
+    try:
         # 如果安装了, 则可以启用http2
         cmd('apt-get install software-properties-common python-software-properties -y')
     except:
-        pass
+        ppa_available = False
+    else:
+        ppa_available = True
 
-    if distro.id() == 'ubuntu':
+    if distro.id() == 'ubuntu' and ppa_available:
         # 安装高版本的Apache2(支持http2), 仅限ubuntu
         cmd("""LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/apache2 &&
     apt-key update &&
     apt-get update &&
     apt-get install apache2 -y""")
-    elif distro.id() == 'debian':
+    else:
         # debian 只有低版本的可以用
         cmd("apt-get install apache2 -y")
 
