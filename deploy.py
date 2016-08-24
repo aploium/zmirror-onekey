@@ -10,11 +10,10 @@ import subprocess
 import logging
 import traceback
 import tempfile
-from io import StringIO
 from urllib.parse import urljoin
 
 __AUTHOR__ = 'Aploium <i@z.codes>'
-__VERSION__ = '0.7.1'
+__VERSION__ = '0.8.0'
 __ZMIRROR_PROJECT_URL__ = 'https://github.com/aploium/zmirror/'
 __ZMIRROR_GIT_URL__ = 'https://github.com/aploium/zmirror.git'
 __ONKEY_PROJECT_URL__ = 'https://github.com/aploium/zmirror-onekey/'
@@ -32,6 +31,7 @@ if os.geteuid() != 0:
     exit(2)
 
 DEBUG = '--debug' in sys.argv
+already_have_cert = '--i-have-cert' in sys.argv
 
 
 class StdLogger:
@@ -178,29 +178,38 @@ mirrors_settings = {
     'google': {
         'domain': None,
         'cfg': [('more_configs/config_google_and_zhwikipedia.py', 'config.py'), ],
+        "certs": {
+            "private_key": None,
+            "cert": None,
+            "intermediate": None,
+        }
     },
 
     'youtubePC': {
         'domain': None,
         'cfg': [('more_configs/config_youtube.py', 'config.py'),
                 ('more_configs/custom_func_youtube.py', 'custom_func.py')],
+        "certs": {},
     },
 
     'twitterPC': {
         'domain': None,
         'cfg': [('more_configs/config_twitter_pc.py', 'config.py'),
                 ('more_configs/custom_func_twitter.py', 'custom_func.py'), ],
+        "certs": {},
     },
 
     'twitterMobile': {
         'domain': None,
         'cfg': [('more_configs/config_twitter_mobile.py', 'config.py'),
                 ('more_configs/custom_func_twitter.py', 'custom_func.py'), ],
+        "certs": {},
     },
 
     'instagram': {
         'domain': None,
         'cfg': [('more_configs/config_instagram.py', 'config.py'), ],
+        "certs": {},
     },
 }
 
@@ -272,22 +281,23 @@ try:
     print('[zmirror] Dependency packages install completed')
     print('[zmirror] Installing letsencrypt...')
     sleep(1)
-
-    if not os.path.exists('/etc/certbot/'):
-        # certbot 不存在, 则安装
-        cmd('git clone https://github.com/certbot/certbot.git', cwd='/etc/')
-        cmd('chmod a+x /etc/certbot/certbot-auto', cwd='/etc/certbot/')
-        cmd('service apache2 stop')
-        cmd('./certbot-auto renew --agree-tos -n --standalone '
-            '--pre-hook "service apache2 stop" '
-            '--post-hook "service apache2 start"',
-            cwd='/etc/certbot/')
+    if not already_have_cert:
+        if not os.path.exists('/etc/certbot/'):
+            # certbot 不存在, 则安装
+            cmd('git clone https://github.com/certbot/certbot.git', cwd='/etc/')
+            cmd('chmod a+x /etc/certbot/certbot-auto', cwd='/etc/certbot/')
+            cmd('service apache2 stop')
+            cmd('./certbot-auto renew --agree-tos -n --standalone '
+                '--pre-hook "service apache2 stop" '
+                '--post-hook "service apache2 start"',
+                cwd='/etc/certbot/')
+        else:
+            # 否则升级一下
+            cmd('git pull', cwd='/etc/certbot/')
+        print("[zmirror] let's encrypt Installation Completed")
+        sleep(1)
     else:
-        # 否则升级一下
-        cmd('git pull', cwd='/etc/certbot/')
-
-    print("[zmirror] let's encrypt Installation Completed")
-    sleep(1)
+        print("[zmirror] you said you already have certs, so skip let's encrypt")
 
     print('\n\n\n-------------------------------\n'
           '[zmirror] Now we need some information:')
@@ -405,9 +415,58 @@ try:
         if _dup_flag:
             continue
 
+        # 当用户选择自己提供证书时, 要求用户输入证书路径
+        if already_have_cert:
+            # 输入私钥
+            while True:
+                private_key = input(
+                    "Please input your SSL private key file path \n"
+                    "which will be used for Apache's SSLCertificateKeyFile\n"
+                    "(should not be blank): "
+                )
+                if not private_key or not os.path.exists(private_key):
+                    print("file", private_key, "does not exist")
+                else:
+                    break
+
+            # 输入证书
+            while True:
+                cert = input(
+                    "Please input your SSL cert file path \n"
+                    "which will be used for Apache's SSLCertificateFile\n"
+                    "It's name may looks like \"2_" + domain + ".crt\"\n"
+                    + "(should not be blank): "
+                )
+                if not cert or not os.path.exists(cert):
+                    print("file", cert, "does not exist")
+                else:
+                    break
+
+            # 输入证书链
+            while True:
+                cert_chain = input(
+                    "Please input your SSL cert chain file \n"
+                    "which will be used for Apache's SSLCertificateChainFile\n"
+                    "It's name may looks like \"1_root_bundle.crt\" or \"1_Intermediate.crt\"\n"
+                    "(should not be blank): "
+                )
+                if not cert_chain or not os.path.exists(cert_chain):
+                    print("file", cert_chain, "does not exist")
+                else:
+                    break
+
         # 将镜像添加到待安装列表中
         mirrors_to_deploy.append(mirror_type)
         mirrors_settings[mirror_type]['domain'] = domain
+
+        if already_have_cert:
+            # noinspection PyUnboundLocalVariable
+            mirrors_settings[mirror_type]['cert']['private_key'] = private_key
+            # noinspection PyUnboundLocalVariable
+            mirrors_settings[mirror_type]['cert']['cert'] = cert
+            # noinspection PyUnboundLocalVariable
+            mirrors_settings[mirror_type]['cert']['intermediate'] = cert_chain
+
         print("Mirror:{mirror_type} Domain:{domain} checked".format(mirror_type=mirror_type, domain=domain))
 
         logging.debug(mirrors_to_deploy)
@@ -433,36 +492,39 @@ try:
         exit(5)
 
     # ############### Really Install ###################
+    if not already_have_cert:
+        # 通过 letsencrypt 获取HTTPS证书
+        print("Fetching HTTPS certifications")
+        cmd("service apache2 stop")  # 先关掉apache
+        for mirror in mirrors_to_deploy:
+            domain = mirrors_settings[mirror]['domain']
 
-    # 通过 letsencrypt 获取HTTPS证书
-    print("Fetching HTTPS certifications")
-    cmd("service apache2 stop")  # 先关掉apache
-    for mirror in mirrors_to_deploy:
-        domain = mirrors_settings[mirror]['domain']
+            if os.path.exists('/etc/letsencrypt/live/{domain}'.format(domain=domain)):
+                # 如果证书已存在, 则跳过
+                print("Certification for {domain} already exists, skipping".format(domain=domain))
+                continue
 
-        if os.path.exists('/etc/letsencrypt/live/{domain}'.format(domain=domain)):
-            # 如果证书已存在, 则跳过
-            print("Certification for {domain} already exists, skipping".format(domain=domain))
-            continue
+            print("Obtaining: {domain}".format(domain=domain))
+            cmd(
+                ('./certbot-auto certonly -n --agree-tos -t -m "{email}" --standalone -d "{domain}" '
+                 '--pre-hook "/usr/sbin/service apache2 stop" '
+                 '--post-hook "/usr/sbin/service apache2 start"'
+                 ).format(email=email, domain=domain),
+                cwd='/etc/certbot/'
+            )
 
-        print("Obtaining: {domain}".format(domain=domain))
-        cmd(
-            ('./certbot-auto certonly -n --agree-tos -t -m "{email}" --standalone -d "{domain}" '
-             '--pre-hook "/usr/sbin/service apache2 stop" '
-             '--post-hook "/usr/sbin/service apache2 start"'
-             ).format(email=email, domain=domain),
-            cwd='/etc/certbot/'
-        )
+            # 检查是否成功获取证书
+            if not os.path.exists('/etc/letsencrypt/live/{domain}'.format(domain=domain)):
+                print('[ERROR] Could NOT obtain an ssl cert, '
+                      'please check your DNS record, '
+                      'and then run again.\n'
+                      'Installation abort')
+                exit(3)
+            print("Succeed: {domain}".format(domain=domain))
+        cmd("service apache2 start")  # 重新启动apache
 
-        # 检查是否成功获取证书
-        if not os.path.exists('/etc/letsencrypt/live/{domain}'.format(domain=domain)):
-            print('[ERROR] Could NOT obtain an ssl cert, '
-                  'please check your DNS record, '
-                  'and then run again.\n'
-                  'Installation abort')
-            exit(3)
-        print("Succeed: {domain}".format(domain=domain))
-    cmd("service apache2 start")  # 重新启动apache
+    else:  # 选择自己提供证书
+        print("[zmirror] skipping let's encrypt, for you already provided your cert")
 
     # ####### 安装zmirror自身 #############
     print('[zmirror] Successfully obtain SSL cert, now installing zmirror itself...')
@@ -583,11 +645,36 @@ try:
             ]:
                 conf = conf.replace("{{%s}}" % key, value)
 
+            # 填写 conf 中的证书路径
+            if already_have_cert:
+                # 已有证书, 则在conf中填入自己的证书
+                certs_dict = mirrors_settings[mirror]['certs']
+                conf = conf.replace("{{cert_file}}", certs_dict['cert'])
+                conf = conf.replace("{{private_key_file}}", certs_dict['private_key'])
+                conf = conf.replace("{{cert_chain_file}}", certs_dict['intermediate'])
+            else:
+                # 若使用 let's encrypt 获取到了证书
+                # 则填入 let's encrypt 的证书路径
+                conf = conf.replace(
+                    "{{cert_file}}",
+                    "/etc/letsencrypt/live/{{domain}}/cert.pem".format(domain=domain),
+                )
+                conf = conf.replace(
+                    "{{private_key_file}}",
+                    "/etc/letsencrypt/live/{{domain}}/privkey.pem".format(domain=domain),
+                )
+                conf = conf.replace(
+                    "{{cert_chain_file}}",
+                    "/etc/letsencrypt/live/{{domain}}/chain.pem".format(domain=domain),
+                )
+
             with open(file_path, 'w', encoding='utf-8') as fp:
                 fp.write(conf)
 
     # ##### Add linux cron script for letsencrypt auto renewal ######
-    if not os.path.exists("/etc/cron.weekly/zmirror-letsencrypt-renew.sh"):  # 若脚本已存在则跳过
+    if not os.path.exists("/etc/cron.weekly/zmirror-letsencrypt-renew.sh") \
+            or already_have_cert:  # 若脚本已存在, 或者选择自己提供证书, 则跳过
+        # 添加 let's encrypt 证书自动更新脚本
         print("Adding cert auto renew script to `/etc/cron.weekly/zmirror-letsencrypt-renew.sh`")
         cron_script = """#!/bin/bash
     cd /etc/certbot
