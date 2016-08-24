@@ -9,10 +9,11 @@ import shutil
 import subprocess
 import logging
 import traceback
+from io import StringIO
 from urllib.parse import urljoin
 
 __AUTHOR__ = 'Aploium <i@z.codes>'
-__VERSION__ = '0.7.0'
+__VERSION__ = '0.7.1'
 __ZMIRROR_PROJECT_URL__ = 'https://github.com/aploium/zmirror/'
 __ZMIRROR_GIT_URL__ = 'https://github.com/aploium/zmirror.git'
 __ONKEY_PROJECT_URL__ = 'https://github.com/aploium/zmirror-onekey/'
@@ -22,12 +23,39 @@ __REPORT_URLS__ = {
     "success": "https://report.zmirror.org/onekey/log/success",
 }
 
+if sys.platform != 'linux':
+    print('This program can ONLY be used in debian-like Linux (debian, ubuntu and some others)')
+    exit(1)
+if os.geteuid() != 0:
+    print('Root privilege is required for this program. Please use `sudo python3 deploy.py`')
+    exit(2)
+
 DEBUG = '--debug' in sys.argv
+
+
+class StdLogger:
+    def __init__(self):
+        self.terminal = sys.stdout
+        self.log = StringIO()
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+
+
+stdout_logger = StdLogger()
+stderr_logger = StdLogger()
 
 
 def cmd(command, cwd=None, **kwargs):
     """运行shell命令"""
-    return subprocess.check_call(command, shell=True, cwd=cwd or os.getcwd(), **kwargs)
+    global stdout_logger
+
+    stdout_logger = StdLogger()
+
+    return subprocess.check_call(command, shell=True, cwd=cwd or os.getcwd(),
+                                 stderr=stderr_logger, stdout=stdout_logger,
+                                 **kwargs)
 
 
 cmd('export LC_ALL=C.UTF-8')  # 设置bash环境为utf-8
@@ -55,7 +83,11 @@ def onekey_report(report_type="success", installing_mirror=None, traceback_str=N
     import re
 
     dist = json.dumps(distro.info(best=True))
-    data = {"linux_dist": dist}
+    data = {
+        "linux_dist": dist,
+        "stdout": stdout_logger.log.getvalue(),
+        "stderr": stderr_logger.log.getvalue(),
+    }
 
     if installing_mirror is not None:
         if isinstance(installing_mirror, (list, tuple)):
@@ -98,13 +130,6 @@ if DEBUG:
         level=logging.NOTSET,
         format='[%(levelname)s %(asctime)s %(funcName)s] %(message)s',
     )
-
-if sys.platform != 'linux':
-    print('This program can ONLY be used in debian-like Linux (debian, ubuntu and some others)')
-    exit(1)
-if os.geteuid() != 0:
-    print('Root privilege is required for this program. Please use `sudo python3 deploy.py`')
-    exit(2)
 
 server_configs = {
     "apache": {
