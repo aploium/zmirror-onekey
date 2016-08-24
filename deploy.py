@@ -314,12 +314,12 @@ try:
             """Please select mirror you want to deploy?
     select one mirror a time, you could select zero or more mirror(s)
 
-    1. Google (include scholar, image, zh_wikipedia) {google}
-    2. twitter (PC) {twitterPC}
-    3. twitter (Mobile) {twitterMobile}
-    4. youtube (pc) {youtubePC}
-    5. instagram {instagram}
-    0. Go to next steps. (OK, I have selected all mirror(s) I want to deploy)
+    {google}  1. Google (include scholar, image, zh_wikipedia)
+    {twitterPC}  2. twitter (PC)
+    {twitterMobile}  3. twitter (Mobile)
+    {youtubePC}  4. youtube (pc)
+    {instagram}  5. instagram
+      0. Go to next steps. (OK, I have selected all mirror(s) I want to deploy)
 
     input 0-5: """.format(
                 google='[SELECTED]' if 'google' in mirrors_to_deploy else '',
@@ -372,9 +372,9 @@ try:
             if domain.count('.') != 2:
                 if input(("Your domain [{domain}] is not an third-level domain, "
                           "which contains three parts and two dots. \n"
-                          "eg1: lovelucia.zmirrordemo.com eg2: g.mymirror.com\n"
-                          "zmirror officially only support third-level domain\n"
-                          "a none third-level domain MAY work, but may cause potential errors\n"
+                          "    eg1: lovelucia.zmirrordemo.com eg2: g.mymirror.com\n"
+                          "    zmirror officially only support third-level domain\n"
+                          "    a none third-level domain MAY work, but may cause potential errors\n"
                           "Continue anyway(y/N)?"
                           ).format(domain=domain)) in ('y', 'yes', 'Yes', 'YES'):
                     break
@@ -423,7 +423,7 @@ try:
                 print()  # 打印一个空行
                 private_key = input(
                     "Please input your SSL private key file path \n"
-                    "which will be used for Apache's SSLCertificateKeyFile\n"
+                    "    which will be used for Apache's SSLCertificateKeyFile\n"
                     "(should not be blank): "
                 )
                 if not private_key or not os.path.exists(private_key):
@@ -436,8 +436,8 @@ try:
                 print()
                 cert = input(
                     "Please input your SSL cert file path \n"
-                    "which will be used for Apache's SSLCertificateFile\n"
-                    "It's name may looks like \"2_" + domain + ".crt\"\n"
+                    "    which will be used for Apache's SSLCertificateFile\n"
+                    "    It's name may looks like \"2_" + domain + ".crt\"\n"
                     + "(should not be blank): "
                 )
                 if not cert or not os.path.exists(cert):
@@ -450,8 +450,8 @@ try:
                 print()
                 cert_chain = input(
                     "Please input your SSL cert chain file \n"
-                    "which will be used for Apache's SSLCertificateChainFile\n"
-                    "It's name may looks like \"1_root_bundle.crt\" or \"1_Intermediate.crt\"\n"
+                    "    which will be used for Apache's SSLCertificateChainFile\n"
+                    "    It's name may looks like \"1_root_bundle.crt\" or \"1_Intermediate.crt\"\n"
                     "(should not be blank): "
                 )
                 if not cert_chain or not os.path.exists(cert_chain):
@@ -479,18 +479,20 @@ try:
         print('[ERROR] you didn\'t select any mirror.\nAbort installation')
         exit(4)
 
-    print()
-    email = input('Please input your email (because letsencrypt requires an email for certification)\n')
+    if not already_have_cert:
+        print()
+        email = input('Please input your email (because letsencrypt requires an email for certification)\n')
 
-    print('Your email:', email)
+        print('Your email:', email)
 
     # 最后确认一遍设置
     print('----------------------')
     print('Now, we are going to install, please check your settings here:')
-    print("Email: " + email)
+    if not already_have_cert:
+        print("  Email: " + email)
     print()
     for mirror in mirrors_to_deploy:
-        print("Mirror: {mirror} Domain: {domain}".format(mirror=mirror, domain=mirrors_settings[mirror]['domain']))
+        print("    Mirror: {mirror} Domain: {domain}".format(mirror=mirror, domain=mirrors_settings[mirror]['domain']))
 
     print()
     if input('Are these settings correct (Y/n)? ') in ('N', 'No', 'n', 'no', 'not', 'none'):
