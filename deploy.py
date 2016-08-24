@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import logging
 import traceback
+import tempfile
 from io import StringIO
 from urllib.parse import urljoin
 
@@ -34,17 +35,21 @@ DEBUG = '--debug' in sys.argv
 
 
 class StdLogger:
-    def __init__(self):
-        self.terminal = sys.stdout
-        self.log = StringIO()
+    def __init__(self, mode="stdout"):
+        self._file = tempfile.NamedTemporaryFile(
+            mode='w+', encoding='utf-8', prefix="zmirror_onekey_{mode}_".format(mode=mode))
 
-    def write(self, message):
-        self.terminal.write(message)
-        self.log.write(message)
+    def get_value(self):
+        self._file.seek(0)
+        return self._file.read()
+
+    @property
+    def file_path(self):
+        return self._file.name
 
 
 stdout_logger = StdLogger()
-stderr_logger = StdLogger()
+stderr_logger = StdLogger(mode="stderr")
 
 
 def cmd(command, cwd=None, **kwargs):
@@ -53,9 +58,13 @@ def cmd(command, cwd=None, **kwargs):
 
     stdout_logger = StdLogger()
 
-    return subprocess.check_call(command, shell=True, cwd=cwd or os.getcwd(),
-                                 stderr=stderr_logger, stdout=stdout_logger,
-                                 **kwargs)
+    return subprocess.check_call(
+        "({cmd} | tee -a {stdout_file}) 3>&1 1>&2 2>&3 | tee -a {stderr_file}".format(
+            cmd=command, stdout_file=stdout_logger.file_path, stderr_file=stderr_logger.file_path,
+        ),
+        shell=True,
+        cwd=cwd or os.getcwd(),
+        **kwargs)
 
 
 cmd('export LC_ALL=C.UTF-8')  # 设置bash环境为utf-8
@@ -85,8 +94,8 @@ def onekey_report(report_type="success", installing_mirror=None, traceback_str=N
     dist = json.dumps(distro.info(best=True))
     data = {
         "linux_dist": dist,
-        "stdout": stdout_logger.log.getvalue(),
-        "stderr": stderr_logger.log.getvalue(),
+        "stdout": stdout_logger.get_value(),
+        "stderr": stderr_logger.get_value(),
     }
 
     if installing_mirror is not None:
