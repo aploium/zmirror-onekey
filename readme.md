@@ -27,7 +27,7 @@
     ```
     然后按照脚本给予的提示继续, 过程中会自动获取SSL证书  
     如果有不懂的, 可参考下面的安装视频  
-    如果遇到bug, 请发issues提出  
+    如果遇到bug, 请[发issues](https://github.com/aploium/zmirror-onekey/issues)提出  
   
 
   
