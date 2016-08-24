@@ -19,23 +19,26 @@
   
 ## 运行方法
 
-```bash
-sudo apt-get install python3 wget -y
-wget https://raw.githubusercontent.com/aploium/zmirror-onekey/master/deploy.py
-sudo python3 deploy.py
-```
-然后按照脚本给予的提示继续, 如果有不懂的, 可参考下面的安装视频  
-如果遇到bug, 请发issues提出  
+* **我没有SSL证书 (如果不懂, 请使用这个)**
+    ```bash
+    sudo apt-get install python3 wget -y
+    wget https://raw.githubusercontent.com/aploium/zmirror-onekey/master/deploy.py
+    sudo python3 deploy.py
+    ```
+    然后按照脚本给予的提示继续, 如果有不懂的, 可参考下面的安装视频  
+    如果遇到bug, 请发issues提出  
   
-  
-如果自己**已有证书**, 希望使用自己提供的证书, 而不是通过 let's encrypt 获取  
-请将上面的第三行替换成下面的代码, 在运行期间会提示你输入证书路径的:  
-  ```bash
-sudo python3 deploy.py --i-have-cert
-```
 
-> **警告**  
-> 不支持加密的私钥, 如果私钥有密码加密, 请先解密  
+  
+* **我已有SSL证书**  
+    如果已有证书, 希望使用自己提供的证书, 而不是通过 let's encrypt 获取  
+    请将上面代码中的第三行替换成下面的样子, 在运行期间会提示你输入证书路径的:  
+    ```bash
+    sudo python3 deploy.py --i-have-cert
+    ```
+    
+    > **警告**  
+    > 不支持加密的私钥, 如果私钥有密码加密, 请先解密  
 
 
 ## 安装过程视频
