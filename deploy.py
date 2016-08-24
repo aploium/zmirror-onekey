@@ -710,12 +710,14 @@ print("Completed.")
 # 最后打印一遍配置
 print("------------ mirrors ------------")
 for mirror in mirrors_to_deploy:
-    print("Mirror: {mirror} URL: https://{domain}/".format(mirror=mirror, domain=mirrors_settings[mirror]['domain']))
+    print("    Mirror: {mirror} URL: https://{domain}/".format(mirror=mirror, domain=mirrors_settings[mirror]['domain']))
 
 if distro.id() == 'debian' or distro.id() == 'ubuntu' and distro.version() == '15.04':
+    print()
     print("[WARING] your system does NOT support HTTP/2! HTTP/2 would not be available\n"
           "If you want to use HTTP/2, please use Ubuntu 14.04/15.10/16.04")
 
-print("\nFor more information, please view zmirror's github: ", __ZMIRROR_PROJECT_URL__)
+print()
+print("For more information, please view zmirror's github: ", __ZMIRROR_PROJECT_URL__)
 print("Contribution and Issues are more than welcomed.")
 print("btw, if you feeling good, I'll be grateful for your Star in github :)")
