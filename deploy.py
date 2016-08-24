@@ -465,11 +465,11 @@ try:
 
         if already_have_cert:
             # noinspection PyUnboundLocalVariable
-            mirrors_settings[mirror_type]['cert']['private_key'] = private_key
+            mirrors_settings[mirror_type]['certs']['private_key'] = private_key
             # noinspection PyUnboundLocalVariable
-            mirrors_settings[mirror_type]['cert']['cert'] = cert
+            mirrors_settings[mirror_type]['certs']['cert'] = cert
             # noinspection PyUnboundLocalVariable
-            mirrors_settings[mirror_type]['cert']['intermediate'] = cert_chain
+            mirrors_settings[mirror_type]['certs']['intermediate'] = cert_chain
 
         print("Mirror:{mirror_type} Domain:{domain} checked".format(mirror_type=mirror_type, domain=domain))
 
