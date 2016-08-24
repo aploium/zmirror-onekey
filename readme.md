@@ -25,7 +25,8 @@
     wget https://raw.githubusercontent.com/aploium/zmirror-onekey/master/deploy.py
     sudo python3 deploy.py
     ```
-    然后按照脚本给予的提示继续, 如果有不懂的, 可参考下面的安装视频  
+    然后按照脚本给予的提示继续, 过程中会自动获取SSL证书  
+    如果有不懂的, 可参考下面的安装视频  
     如果遇到bug, 请发issues提出  
   
 
