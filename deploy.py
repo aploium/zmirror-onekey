@@ -583,7 +583,7 @@ print("------------ mirrors ------------")
 for mirror in mirrors_to_deploy:
     print("Mirror: {mirror} URL: https://{domain}/".format(mirror=mirror, domain=mirrors_settings[mirror]['domain']))
 
-if distro.id() == 'debian' or distro.id() == 'ubuntu' and distro.version() == '14.04':
+if distro.id() == 'debian' or distro.id() == 'ubuntu' and distro.version() == '15.04':
     print("[WARING] your system does NOT support HTTP/2! HTTP/2 would not be available\n"
           "If you want to use HTTP/2, please use Ubuntu 14.04/15.10/16.04")
 
