@@ -107,7 +107,7 @@ def onekey_report(report_type=REPORT_SUCCESS, installing_mirror=None, traceback_
                               data={"traceback": str(data)},
                               verify=False, )
         except:
-            pass
+            raise
         if DEBUG:
             print(r.text, r.headers, r.request.body)
 
@@ -439,7 +439,7 @@ try:
             2: "twitterPC",
             3: "twitterMobile",
             4: "youtubePC",
-            5: "youtubePC",
+            5: "youtubeMobile",
             6: "instagram",
         }[_input]
 
