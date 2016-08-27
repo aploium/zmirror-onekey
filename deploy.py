@@ -739,8 +739,8 @@ try:
                            '#    请看 `config_default.py` 文件中的 `Human/IP verification` 设置区段\n' \
                            '#    PS: 下面的设置都支持中文, 可以自行修改成中文\n'
                 content += 'human_ip_verification_enabled = True\n'
-                content += 'human_ip_verification_answers_hash_str = {salt}  # Secret key, please keep it secret\n'.format(
-                    salt="".join(random.choice(string.printable) for _ in range(32))
+                content += 'human_ip_verification_answers_hash_str = \'{salt}\'  # Secret key, please keep it secret\n'.format(
+                    salt="".join(random.choice(string.ascii_letters + string.digits) for _ in range(32))
                 )
                 content += 'human_ip_verification_questions = [\n' + \
                            '    ["{question}", "{answer}", "{hint}"],\n'.format(
