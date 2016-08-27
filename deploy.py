@@ -10,6 +10,8 @@ import subprocess
 import logging
 import traceback
 import tempfile
+import string
+import random
 from urllib.parse import urljoin
 
 __AUTHOR__ = 'Aploium <i@z.codes>'
@@ -250,7 +252,7 @@ mirrors_settings = {
             "private_key": None,
             "cert": None,
             "intermediate": None,
-        }
+        },
     },
 
     'youtubePC': {
@@ -298,6 +300,8 @@ sleep(1)
 # ################# 安装一些依赖包 ####################
 print('[zmirror] Installing some necessarily packages')
 email = ""
+question = None
+# {"name":"","answer":"","hint":""}
 try:
     # 设置本地时间为北京时间
     cmd('cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime')
@@ -571,6 +575,40 @@ try:
 
         print('Your email:', email)
 
+    # 是否需要输入正确的密码才能访问
+    print()
+    print("zmirror can provide simple verification via password\n"
+          "    just as you may have seen in zmirror's demo sites (however, demo sites does not require correct answer)")
+    need_answer_question = input("Do you want to protect your mirror by password? (y/N):")
+    if need_answer_question in ("y", "yes", "Yes", "YES"):
+        need_answer_question = True
+        print()
+        print(
+            "##TIPS1##\n"
+            "In your bash environment, you may not able to input Chinese,\n"
+            "    however, you can input English here,\n"
+            "    and change them to Chinese in the config file manually, after the installation.\n"
+            "    the settings are in /var/www/YOUR_MIRROR_FOLDER/config.py\n"
+            "###TIPS2##\n"
+            "This script here only provide BASIC settings for verification, \n"
+            "    For full verification settings list, \n"
+            "    please see the ##Human/IP verification## section of `config_default.py`\n"
+        )
+        while True:
+            name = input("Please input the question:")
+            if not name:
+                print("    question should not be blank")
+                continue
+            answer = input("Please input the answer (act as password):")
+            if not answer:
+                print("    answer should not be blank")
+                continue
+            hint = input("Please input the hint (optional, press [ENTER] to skip):")
+            question = {"name": name, "answer": answer, "hint": hint}
+            break
+    else:
+        need_answer_question = False
+
     # 最后确认一遍设置
     print('----------------------')
     print('Now, we are going to install, please check your settings here:')
@@ -579,6 +617,12 @@ try:
     print()
     for mirror in mirrors_to_deploy:
         print("    Mirror: {mirror} Domain: {domain}".format(mirror=mirror, domain=mirrors_settings[mirror]['domain']))
+    print()
+    if need_answer_question:
+        print("Protected with question-answer:")
+        print("  Question:", question["name"])
+        print("  Answer:", question["answer"])
+        print("  Hint:", question["hint"])
 
     print()
     if input('Are these settings correct (Y/n)? ') in ('N', 'No', 'n', 'no', 'not', 'none'):
@@ -629,10 +673,9 @@ try:
     sleep(1)
 
     this_server = server_configs['apache']
-    htdoc = this_server['htdoc']
-    config_root = this_server['config_root']
-    assert isinstance(htdoc, str)
-    assert isinstance(config_root, str)
+    htdoc = this_server['htdoc']  # type: str
+    config_root = this_server['config_root']  # type: str
+
     os.chdir(htdoc)
     cmd('git clone %s zmirror' % __ZMIRROR_GIT_URL__, cwd=htdoc)
     zmirror_source_folder = os.path.join(htdoc, 'zmirror')
@@ -687,7 +730,23 @@ try:
                              "my_host_scheme = 'https://' # Modified by zmirror-onekey",
                              content, count=1)
             # 在文件末尾添加 verbose_level = 2
-            content += '\nverbose_level = 2 # Added by zmirror-onekey\n'
+            content += '\n\nverbose_level = 2 # Added by zmirror-onekey\n'
+
+            # 如果需要添加验证问题
+            if need_answer_question:
+                content += '\n\n########## Verification (added by zmirror-onekey) ########\n' \
+                           '# 这里只有最基础的单一问题-答案验证, 如果需要更加丰富的验证方式, \n' \
+                           '#    请看 `config_default.py` 文件中的 `Human/IP verification` 设置区段\n' \
+                           '#    PS: 下面的设置都支持中文, 可以自行修改成中文\n'
+                content += 'human_ip_verification_enabled = True\n'
+                content += 'human_ip_verification_answers_hash_str = {salt}  # Secret key, please keep it secret\n'.format(
+                    salt="".join(random.choice(string.printable) for _ in range(32))
+                )
+                content += 'human_ip_verification_questions = [\n' + \
+                           '    ["{question}", "{answer}", "{hint}"],\n'.format(
+                               question=question["name"], answer=question["answer"], hint=question["hint"],
+                           ) + ']\n'
+                content += 'human_ip_verification_identity_record = []\n'
 
             fp.seek(0)  # 指针返回文件头
             fp.write(content)  # 回写
