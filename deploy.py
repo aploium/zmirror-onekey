@@ -295,7 +295,10 @@ try:
             cmd('./certbot-auto renew --agree-tos -n --standalone '
                 '--pre-hook "service apache2 stop" '
                 '--post-hook "service apache2 restart"',
-                cwd='/etc/certbot/')
+                cwd='/etc/certbot/',
+                # ubuntu14.04下, 使用tee会出现无法正常退出的bug
+                no_tee=distro.id() == 'ubuntu' and distro.version() == '14.04'
+                )
         else:
             # 否则升级一下
             cmd('git pull', cwd='/etc/certbot/')
@@ -521,7 +524,7 @@ try:
             cmd(
                 ('./certbot-auto certonly -n --agree-tos -t -m "{email}" --standalone -d "{domain}" '
                  '--pre-hook "/usr/sbin/service apache2 stop" '
-                 '--post-hook "/usr/sbin/service apache2 restart"'
+                 '--post-hook "/usr/sbin/service apache2 start"'
                  ).format(email=email, domain=domain),
                 cwd='/etc/certbot/',
                 # 在ubuntu 14.04下, tee会出现无法正常结束的bug, 所以此时不能再用tee #1
@@ -536,7 +539,10 @@ try:
                       'Installation abort')
                 exit(3)
             print("Succeed: {domain}".format(domain=domain))
-        cmd("service apache2 restart")  # 重新启动apache
+        cmd("service apache2 start",  # 重新启动apache
+            # ubuntu14.04下, 使用tee会出现无法正常退出的bug, 所以禁用掉
+            no_tee=distro.id() == 'ubuntu' and distro.version() == '14.04'
+            )
 
     else:  # 选择自己提供证书
         print("[zmirror] skipping let's encrypt, for you already provided your cert")
@@ -704,7 +710,10 @@ try:
 
     # 重启一下apache
     print("Restarting apache2")
-    cmd('service apache2 restart')
+    cmd('service apache2 restart',
+        # ubuntu14.04下, 使用tee会出现无法正常退出的bug
+        no_tee=distro.id() == 'ubuntu' and distro.version() == '14.04'
+        )
 
 except:
     onekey_report('error', traceback_str=traceback.format_exc(), installing_mirror=mirrors_to_deploy)
