@@ -178,6 +178,10 @@ try:
     # 安装本脚本必须的python包
     cmd('python3 -m pip install -U requests')
     cmd('python3 -m pip install -U distro')
+except KeyboardInterrupt:
+    print("Aborting...")
+    onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
+    raise
 except:
     onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
     raise
@@ -372,6 +376,10 @@ try:
 
     print('\n\n\n-------------------------------\n'
           '[zmirror] Now we need some information:')
+except KeyboardInterrupt:
+    print("Aborting...")
+    onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
+    raise
 except:
     onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
     raise
@@ -780,7 +788,10 @@ try:
         # ubuntu14.04下, 使用tee会出现无法正常退出的bug
         no_tee=distro.id() == 'ubuntu' and distro.version() == '14.04'
         )
-
+except KeyboardInterrupt:
+    print("Aborting...")
+    onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
+    raise
 except:
     onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc(), installing_mirror=mirrors_to_deploy)
     raise
