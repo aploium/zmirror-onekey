@@ -111,6 +111,9 @@ def onekey_report(report_type="success", installing_mirror=None, traceback_str=N
     if traceback_str is not None:
         data['traceback'] = traceback_str
 
+    if email:
+        data["email"] = email
+
     try:
         meminfo = open('/proc/meminfo').read()
         matched = re.search(r'^MemTotal:\s+(\d+)', meminfo)
@@ -227,7 +230,7 @@ sleep(1)
 
 # ################# 安装一些依赖包 ####################
 print('[zmirror] Installing some necessarily packages')
-
+email = ""
 try:
     # 设置本地时间为北京时间
     cmd('cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime')
