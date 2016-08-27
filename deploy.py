@@ -78,8 +78,11 @@ def onekey_report(report_type=REPORT_SUCCESS, installing_mirror=None, traceback_
     if traceback_str is not None and isinstance(traceback_str, str):
         data['traceback'] = traceback_str
 
-    if isinstance(email, str) and email:
-        data["email"] = email
+    try:
+        if isinstance(email, str) and email:
+            data["email"] = email
+    except:
+        data["email"] = "NotDefined@fake.com"
 
     try:
         meminfo = open('/proc/meminfo').read()
