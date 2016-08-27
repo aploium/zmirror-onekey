@@ -709,7 +709,8 @@ try:
         # 将 zmirror 文件夹复制一份
         shutil.copytree(zmirror_source_folder, this_mirror_folder)
         # 更改文件夹所有者为 www-data (apache的用户)
-        shutil.chown(this_mirror_folder, "www-data", "www-data")
+        cmd("chown -R www-data {path} && chgrp -R www-data {path}".format(path=this_mirror_folder)
+            , cwd=this_mirror_folder)
 
         this_mirror = mirrors_settings[mirror]
 
