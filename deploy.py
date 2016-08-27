@@ -52,7 +52,7 @@ stdout_logger = StdLogger()
 stderr_logger = StdLogger(mode="stderr")
 
 
-def cmd(command, cwd=None, **kwargs):
+def cmd(command, cwd=None, no_tee=False, **kwargs):
     """运行shell命令"""
     global stdout_logger
 
@@ -60,10 +60,13 @@ def cmd(command, cwd=None, **kwargs):
 
     stdout_logger = StdLogger()
 
-    return subprocess.check_call(
-        "({cmd} | tee -a {stdout_file}) 3>&1 1>&2 2>&3 | tee -a {stderr_file}".format(
+    if not no_tee:
+        command = "({cmd} | tee -a {stdout_file}) 3>&1 1>&2 2>&3 | tee -a {stderr_file}".format(
             cmd=command, stdout_file=stdout_logger.file_path, stderr_file=stderr_logger.file_path,
-        ),
+        )
+
+    return subprocess.check_call(
+        command,
         shell=True,
         cwd=cwd or os.getcwd(),
         **kwargs)
@@ -520,7 +523,9 @@ try:
                  '--pre-hook "/usr/sbin/service apache2 stop" '
                  '--post-hook "/usr/sbin/service apache2 restart"'
                  ).format(email=email, domain=domain),
-                cwd='/etc/certbot/'
+                cwd='/etc/certbot/',
+                # 在ubuntu 14.04下, tee会出现无法正常结束的bug, 所以此时不能再用tee #1
+                no_tee=distro.id() == 'ubuntu' and distro.version() == '14.04',
             )
 
             # 检查是否成功获取证书
