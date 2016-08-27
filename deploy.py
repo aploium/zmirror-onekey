@@ -56,6 +56,8 @@ def cmd(command, cwd=None, **kwargs):
     """运行shell命令"""
     global stdout_logger
 
+    print("[zmirror] executing:", command)
+
     stdout_logger = StdLogger()
 
     return subprocess.check_call(
