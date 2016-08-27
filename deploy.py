@@ -291,7 +291,7 @@ try:
             cmd('service apache2 stop')
             cmd('./certbot-auto renew --agree-tos -n --standalone '
                 '--pre-hook "service apache2 stop" '
-                '--post-hook "service apache2 start"',
+                '--post-hook "service apache2 restart"',
                 cwd='/etc/certbot/')
         else:
             # 否则升级一下
@@ -518,7 +518,7 @@ try:
             cmd(
                 ('./certbot-auto certonly -n --agree-tos -t -m "{email}" --standalone -d "{domain}" '
                  '--pre-hook "/usr/sbin/service apache2 stop" '
-                 '--post-hook "/usr/sbin/service apache2 start"'
+                 '--post-hook "/usr/sbin/service apache2 restart"'
                  ).format(email=email, domain=domain),
                 cwd='/etc/certbot/'
             )
@@ -531,7 +531,7 @@ try:
                       'Installation abort')
                 exit(3)
             print("Succeed: {domain}".format(domain=domain))
-        cmd("service apache2 start")  # 重新启动apache
+        cmd("service apache2 restart")  # 重新启动apache
 
     else:  # 选择自己提供证书
         print("[zmirror] skipping let's encrypt, for you already provided your cert")
