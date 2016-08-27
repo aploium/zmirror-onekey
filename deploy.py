@@ -13,14 +13,16 @@ import tempfile
 from urllib.parse import urljoin
 
 __AUTHOR__ = 'Aploium <i@z.codes>'
-__VERSION__ = '0.8.0'
+__VERSION__ = '0.9.0'
 __ZMIRROR_PROJECT_URL__ = 'https://github.com/aploium/zmirror/'
 __ZMIRROR_GIT_URL__ = 'https://github.com/aploium/zmirror.git'
 __ONKEY_PROJECT_URL__ = 'https://github.com/aploium/zmirror-onekey/'
 __ONKEY_PROJECT_URL_CONTENT__ = 'https://raw.githubusercontent.com/aploium/zmirror-onekey/master/'
+REPORT_SUCCESS = "success"
+REPORT_ERROR = "error"
 __REPORT_URLS__ = {
-    "error": "https://report.zmirror.org/onekey/log/error",
-    "success": "https://report.zmirror.org/onekey/log/success",
+    REPORT_ERROR: "https://report.zmirror.org/onekey/log/error",
+    REPORT_SUCCESS: "https://report.zmirror.org/onekey/log/success",
 }
 
 if sys.platform != 'linux':
@@ -34,6 +36,79 @@ DEBUG = '--debug' in sys.argv
 already_have_cert = '--i-have-cert' in sys.argv
 
 
+def onekey_report(report_type=REPORT_SUCCESS, installing_mirror=None, traceback_str=None):
+    """
+    发送报告到服务器
+    尽可能保证在致命错误发生时也能传出错误报告
+    """
+    import json
+    import re
+    try:
+        import distro
+    except:
+        dist = "Unable to load package distro\n" + traceback.format_exc()
+    else:
+        try:
+            dist = json.dumps(distro.info(best=True))
+        except:
+            dist = "Unable to read dist\n" + traceback.format_exc()
+
+    try:
+        stdout_str = stdout_logger_last.get_value() + stdout_logger.get_value()
+    except:
+        stdout_str = "Unable to read stdout.\n" + traceback.format_exc()
+    try:
+        stderr_str = stderr_logger.get_value()
+    except:
+        stderr_str = "Unable to read stderr.\n" + traceback.format_exc()
+
+    data = {
+        "linux_dist": dist,
+        "stdout": stdout_str,
+        "stderr": stderr_str,
+    }
+    try:
+        if installing_mirror is not None:
+            if isinstance(installing_mirror, (list, tuple)):
+                installing_mirror = ','.join(installing_mirror)
+            data['installing_mirror'] = installing_mirror
+    except:
+        data['installing_mirror'] = "Unable to get installing_mirror"
+
+    if traceback_str is not None and isinstance(traceback_str, str):
+        data['traceback'] = traceback_str
+
+    if isinstance(email, str) and email:
+        data["email"] = email
+
+    try:
+        meminfo = open('/proc/meminfo').read()
+        matched = re.search(r'^MemTotal:\s+(\d+)', meminfo)
+        if matched:
+            mem_total_KB = int(matched.groups()[0])
+            data['memory'] = mem_total_KB
+    except:
+        data['memory'] = 1
+
+    if DEBUG:
+        print(__REPORT_URLS__[report_type], data)
+
+    try:
+        r = requests.post(__REPORT_URLS__[report_type], data=data)
+    except:
+        if DEBUG:
+            traceback.print_exc()
+    else:
+        try:
+            r = requests.post(__REPORT_URLS__[report_type],
+                              data={"traceback": str(data)},
+                              verify=False, )
+        except:
+            pass
+        if DEBUG:
+            print(r.text, r.headers, r.request.body)
+
+
 class StdLogger:
     def __init__(self, mode="stdout"):
         self._file = tempfile.NamedTemporaryFile(
@@ -43,22 +118,40 @@ class StdLogger:
         self._file.seek(0)
         return self._file.read()
 
+    def write(self, msg):
+        """
+        :type msg: str
+        """
+        self._file.write(msg)
+
     @property
     def file_path(self):
         return self._file.name
 
 
-stdout_logger = StdLogger()
-stderr_logger = StdLogger(mode="stderr")
+try:
+    stdout_logger_last = StdLogger()
+    stdout_logger = StdLogger()
+    stderr_logger = StdLogger(mode="stderr")
+except:
+    onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
+    raise
 
 
 def cmd(command, cwd=None, no_tee=False, **kwargs):
-    """运行shell命令"""
-    global stdout_logger
+    """运行shell命令
+    :type command: str
+    :type cwd: str
+    :type no_tee: bool
+    """
+    global stdout_logger, stdout_logger_last
 
     print("[zmirror] executing:", command)
 
+    stdout_logger_last = stdout_logger
     stdout_logger = StdLogger()
+
+    stdout_logger.write("\n--------\n[zmirror] executing: " + command)
 
     if not no_tee:
         command = "({cmd} | tee -a {stdout_file}) 3>&1 1>&2 2>&3 | tee -a {stderr_file}".format(
@@ -72,75 +165,35 @@ def cmd(command, cwd=None, no_tee=False, **kwargs):
         **kwargs)
 
 
-cmd('export LC_ALL=C.UTF-8')  # 设置bash环境为utf-8
+try:
+    cmd('export LC_ALL=C.UTF-8')  # 设置bash环境为utf-8
 
-cmd('apt-get update && apt-get install python3 python3-pip -y')
+    cmd('apt-get -y -q update && apt-get -y -q install python3 python3-pip')
 
-# for some old version Linux, pip has bugs, causing:
-# ImportError: cannot import name 'IncompleteRead'
-# so we need to upgrade pip first
-cmd('easy_install3 -U pip')
+    # for some old version Linux, pip has bugs, causing:
+    # ImportError: cannot import name 'IncompleteRead'
+    # so we need to upgrade pip first
+    cmd('easy_install3 -U pip')
 
-# 安装本脚本必须的python包
-cmd('python3 -m pip install -U requests')
-cmd('python3 -m pip install -U distro')
-
-import distro
-
-
-def onekey_report(report_type="success", installing_mirror=None, traceback_str=None):
-    """
-    发送报告到服务器
-    """
-    import json
+    # 安装本脚本必须的python包
+    cmd('python3 -m pip install -U requests')
+    cmd('python3 -m pip install -U distro')
+except:
+    onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
+    raise
+try:
     import distro
-    import re
-
-    dist = json.dumps(distro.info(best=True))
-    data = {
-        "linux_dist": dist,
-        "stdout": stdout_logger.get_value(),
-        "stderr": stderr_logger.get_value(),
-    }
-
-    if installing_mirror is not None:
-        if isinstance(installing_mirror, (list, tuple)):
-            installing_mirror = ','.join(installing_mirror)
-        data['installing_mirror'] = installing_mirror
-
-    if traceback_str is not None:
-        data['traceback'] = traceback_str
-
-    if email:
-        data["email"] = email
-
-    try:
-        meminfo = open('/proc/meminfo').read()
-        matched = re.search(r'^MemTotal:\s+(\d+)', meminfo)
-        if matched:
-            mem_total_KB = int(matched.groups()[0])
-            data['memory'] = mem_total_KB
-    except:
-        pass
-
-    if DEBUG:
-        print(__REPORT_URLS__[report_type], data)
-
-    try:
-        r = requests.post(__REPORT_URLS__[report_type], data=data)
-    except:
-        if DEBUG:
-            traceback.print_exc()
-    else:
-        if DEBUG:
-            print(r.text, r.headers, r.request.body)
-
+except:
+    print("Could not import python package distro, abort installation")
+    onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
+    raise
 
 try:
     import requests
 except:
     print('Could not install requests, program exit')
-    exit(1)
+    onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
+    raise
 
 if DEBUG:
     logging.basicConfig(
@@ -200,6 +253,13 @@ mirrors_settings = {
         "certs": {},
     },
 
+    'youtubeMobile': {
+        'domain': None,
+        'cfg': [('more_configs/config_youtube_mobile.py', 'config.py'),
+                ('more_configs/custom_func_youtube.py', 'custom_func.py')],
+        "certs": {},
+    },
+
     'twitterPC': {
         'domain': None,
         'cfg': [('more_configs/config_twitter_pc.py', 'config.py'),
@@ -237,18 +297,18 @@ try:
     # 告诉apt-get要安静
     cmd('export DEBIAN_FRONTEND=noninteractive')
     # 更新apt-get
-    cmd('apt-get update')
+    cmd('apt-get -y -q update')
     # 安装必须的包
-    cmd('apt-get install git python3 python3-pip wget curl  -y')
+    cmd('apt-get -y -q install git python3 python3-pip wget curl')
     # 安装非必须的包
     try:
         # 更新一下openssl
-        cmd('apt-get install openssl -y')
+        cmd('apt-get -y -q install openssl')
     except:
         pass
     try:
         # 如果安装了, 则可以启用http2
-        cmd('apt-get install software-properties-common python-software-properties -y')
+        cmd('apt-get -y -q install software-properties-common python-software-properties')
     except:
         ppa_available = False
     else:
@@ -256,13 +316,13 @@ try:
 
     if distro.id() == 'ubuntu' and ppa_available:
         # 安装高版本的Apache2(支持http2), 仅限ubuntu
-        cmd("""LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/apache2 &&
+        cmd("""LC_ALL=C.UTF-8 add-apt-repository ppa:ondrej/apache2 &&
     apt-key update &&
-    apt-get update &&
-    apt-get install apache2 -y""")
+    apt-get -y -q update &&
+    apt-get -y -q install apache2""")
     else:
         # debian 只有低版本的可以用
-        cmd("apt-get install apache2 -y")
+        cmd("apt-get -y -q install apache2")
 
     cmd("""a2enmod rewrite mime include headers filter expires deflate autoindex setenvif ssl""")
 
@@ -274,9 +334,9 @@ try:
     # (可选) 更新一下各种包
     if not (distro.id() == 'ubuntu' and distro.version() == '14.04'):  # 系统不是ubuntu 14.04
         # Ubuntu 14.04 执行本命令的时候会弹一个postfix的交互, 所以不执行
-        cmd('apt-get upgrade -y')
+        cmd('apt-get -y -q upgrade')
 
-    cmd("""apt-get install libapache2-mod-wsgi-py3 -y && a2enmod wsgi""")
+    cmd("""apt-get -y -q install libapache2-mod-wsgi-py3&& a2enmod wsgi""")
 
     # 安装和更新必须的python包
     cmd('python3 -m pip install -U requests flask')
@@ -313,7 +373,7 @@ try:
     print('\n\n\n-------------------------------\n'
           '[zmirror] Now we need some information:')
 except:
-    onekey_report('error', traceback_str=traceback.format_exc())
+    onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
     raise
 
 mirrors_to_deploy = []
@@ -326,17 +386,19 @@ try:
     select one mirror a time, you could select zero or more mirror(s)
 
     {google}  1. Google (include scholar, image, zh_wikipedia)
-    {twitterPC}  2. twitter (PC)
-    {twitterMobile}  3. twitter (Mobile)
-    {youtubePC}  4. youtube (pc)
-    {instagram}  5. instagram
+    {twitterPC}  2. twitter (PC ONLY)
+    {twitterMobile}  3. twitter (Mobile ONLY)
+    {youtubePC}  4. youtube (PC ONLY)
+    {youtubeMobile}  5. youtube (Mobile ONLY)
+    {instagram}  6. instagram
       0. Go to next steps. (OK, I have selected all mirror(s) I want to deploy)
 
-    input 0-5: """.format(
+    input 0-6: """.format(
                 google='[SELECTED]' if 'google' in mirrors_to_deploy else '',
                 twitterPC='[SELECTED]' if 'twitterPC' in mirrors_to_deploy else '',
                 twitterMobile='[SELECTED]' if 'twitterMobile' in mirrors_to_deploy else '',
                 youtubePC='[SELECTED]' if 'youtubePC' in mirrors_to_deploy else '',
+                youtubeMobile='[SELECTED]' if 'youtubeMobile' in mirrors_to_deploy else '',
                 instagram='[SELECTED]' if 'instagram' in mirrors_to_deploy else '',
             )
 
@@ -355,8 +417,8 @@ try:
 
         if _input == 0:
             break
-        if not (0 <= _input <= 5):
-            print('[ERROR] please input correct number (0-5), only select one mirror a time\n'
+        if not (0 <= _input <= 6):
+            print('[ERROR] please input correct number (0-6), only select one mirror a time\n'
                   '-------------------------\n\n')
             continue
 
@@ -366,7 +428,8 @@ try:
             2: "twitterPC",
             3: "twitterMobile",
             4: "youtubePC",
-            5: "instagram",
+            5: "youtubePC",
+            6: "instagram",
         }[_input]
 
         # 在选项里, 镜像已存在, 则删去, 并且跳过下面的步骤
@@ -508,8 +571,7 @@ try:
 
     print()
     if input('Are these settings correct (Y/n)? ') in ('N', 'No', 'n', 'no', 'not', 'none'):
-        print('installation aborted.')
-        exit(5)
+        raise SystemExit('installation abort manually.')
 
     # ############### Really Install ###################
     if not already_have_cert:
@@ -720,17 +782,21 @@ try:
         )
 
 except:
-    onekey_report('error', traceback_str=traceback.format_exc(), installing_mirror=mirrors_to_deploy)
+    onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc(), installing_mirror=mirrors_to_deploy)
     raise
 
-onekey_report('success', installing_mirror=mirrors_to_deploy)
+try:
+    onekey_report(report_type=REPORT_SUCCESS, installing_mirror=mirrors_to_deploy)
+except:
+    onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
 
 # ####### 完成 ########
-print("Completed.")
+print("Completed.\n")
 # 最后打印一遍配置
 print("------------ mirrors ------------")
 for mirror in mirrors_to_deploy:
     print("    Mirror: {mirror} URL: https://{domain}/".format(mirror=mirror, domain=mirrors_settings[mirror]['domain']))
+print("------------ mirrors ------------")
 
 if distro.id() == 'debian' or distro.id() == 'ubuntu' and distro.version() == '15.04':
     print()
