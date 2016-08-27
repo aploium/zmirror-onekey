@@ -678,15 +678,15 @@ try:
                 # 则填入 let's encrypt 的证书路径
                 conf = conf.replace(
                     "{{cert_file}}",
-                    "/etc/letsencrypt/live/{{domain}}/cert.pem".format(domain=domain),
+                    "/etc/letsencrypt/live/{domain}/cert.pem".format(domain=domain),
                 )
                 conf = conf.replace(
                     "{{private_key_file}}",
-                    "/etc/letsencrypt/live/{{domain}}/privkey.pem".format(domain=domain),
+                    "/etc/letsencrypt/live/{domain}/privkey.pem".format(domain=domain),
                 )
                 conf = conf.replace(
                     "{{cert_chain_file}}",
-                    "/etc/letsencrypt/live/{{domain}}/chain.pem".format(domain=domain),
+                    "/etc/letsencrypt/live/{domain}/chain.pem".format(domain=domain),
                 )
 
             with open(file_path, 'w', encoding='utf-8') as fp:
