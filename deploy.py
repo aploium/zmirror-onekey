@@ -404,6 +404,7 @@ try:
                 continue  # 重新来
             else:
                 # 仍然继续的话, 把domain_ip当做local_ip
+                local_ip = '127.0.0.1'
                 domain_ip = local_ip
 
         # 域名检验--目标域名的IP不等于本地机器的IP
