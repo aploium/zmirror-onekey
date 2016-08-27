@@ -579,7 +579,7 @@ try:
     print()
     print("zmirror can provide simple verification via password\n"
           "    just as you may have seen in zmirror's demo sites (however, demo sites does not require correct answer)")
-    need_answer_question = input("Do you want to protect your mirror by password? (y/N):")
+    need_answer_question = input("Do you want to protect your mirror by password? (y/N): ")
     if need_answer_question in ("y", "yes", "Yes", "YES"):
         need_answer_question = True
         print()
@@ -595,15 +595,15 @@ try:
             "    please see the ##Human/IP verification## section of `config_default.py`\n"
         )
         while True:
-            name = input("Please input the question:")
+            name = input("Please input the question: ")
             if not name:
                 print("    question should not be blank")
                 continue
-            answer = input("Please input the answer (act as password):")
+            answer = input("Please input the answer (act as password): ")
             if not answer:
                 print("    answer should not be blank")
                 continue
-            hint = input("Please input the hint (optional, press [ENTER] to skip):")
+            hint = input("Please input the hint (optional, press [ENTER] to skip): ")
             question = {"name": name, "answer": answer, "hint": hint}
             break
     else:
