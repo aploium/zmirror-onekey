@@ -172,7 +172,7 @@ def cmd(command, cwd=None, no_tee=False, **kwargs):
     except:
         traceback.print_exc()
         print()
-        print("**ERROR** command: \n    ", command, "\nerror, do installation should be abort.")
+        print("**ERROR** command: \n    ", command, "\nerror, installation should be abort.")
         choice = input("Do you want to continue installation anyway?(y/N) ")
         if choice in ("y", "Y", "yes", "Yes"):
             print("Installation continue...")
