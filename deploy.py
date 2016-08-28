@@ -177,7 +177,7 @@ def cmd(command, cwd=None, no_tee=False, **kwargs):
         if choice in ("y", "Y", "yes", "Yes"):
             print("Installation continue...")
             try:
-                onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
+                onekey_report(report_type=REPORT_ERROR, traceback_str="[Continued]\n" + traceback.format_exc())
             except:
                 pass
             return
