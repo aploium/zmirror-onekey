@@ -163,11 +163,28 @@ def cmd(command, cwd=None, no_tee=False, **kwargs):
             cmd=command, stdout_file=stdout_logger.file_path, stderr_file=stderr_logger.file_path,
         )
 
-    return subprocess.check_call(
-        command,
-        shell=True,
-        cwd=cwd or os.getcwd(),
-        **kwargs)
+    try:
+        result = subprocess.check_call(
+            command,
+            shell=True,
+            cwd=cwd or os.getcwd(),
+            **kwargs)
+    except:
+        traceback.print_exc()
+        print()
+        print("**ERROR** command: \n    ", command, "\nerror, do installation should be abort.")
+        choice = input("Do you want to continue installation anyway?(y/N) ")
+        if choice in ("y", "Y", "yes", "Yes"):
+            print("Installation continue...")
+            try:
+                onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
+            except:
+                pass
+            return
+        else:
+            raise
+    else:
+        return result
 
 
 try:
