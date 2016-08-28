@@ -304,7 +304,10 @@ question = None
 # {"name":"","answer":"","hint":""}
 try:
     # 设置本地时间为北京时间
-    cmd('cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime')
+    try:
+        cmd('cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime')
+    except:
+        pass
     # 告诉apt-get要安静
     cmd('export DEBIAN_FRONTEND=noninteractive')
     # 更新apt-get
