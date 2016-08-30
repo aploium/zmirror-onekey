@@ -514,6 +514,7 @@ try:
         # 在选项里, 镜像已存在, 则删去, 并且跳过下面的步骤
         if mirror_type in mirrors_to_deploy:
             mirrors_to_deploy.remove(mirror_type)
+            mirrors_settings[mirror_type]['domain'] = None
             print("Mirror:{mirror_type} unchecked.".format(mirror_type=mirror_type))
             continue
 
@@ -563,7 +564,7 @@ try:
         # 域名检验--域名是否重复
         _dup_flag = False
         for mirror in mirrors_to_deploy:
-            if mirrors_settings[mirror_type]['domain'] == domain:
+            if mirrors_settings[mirror]['domain'] == domain and mirror != mirror_type:
                 print("Duplicated domain! conflict with mirror: " + mirror)
                 _dup_flag = True
                 break
