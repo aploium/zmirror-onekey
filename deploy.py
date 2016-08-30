@@ -15,7 +15,7 @@ import random
 from urllib.parse import urljoin
 
 __AUTHOR__ = 'Aploium <i@z.codes>'
-__VERSION__ = '0.9.0'
+__VERSION__ = '0.10.0'
 __ZMIRROR_PROJECT_URL__ = 'https://github.com/aploium/zmirror/'
 __ZMIRROR_GIT_URL__ = 'https://github.com/aploium/zmirror.git'
 __ONKEY_PROJECT_URL__ = 'https://github.com/aploium/zmirror-onekey/'
@@ -43,7 +43,7 @@ DEBUG = '--debug' in sys.argv
 already_have_cert = '--i-have-cert' in sys.argv
 
 
-def onekey_report(report_type=REPORT_SUCCESS, installing_mirror=None, traceback_str=None):
+def onekey_report(report_type=REPORT_SUCCESS, installing_mirror=None, traceback_str=None, msg=None):
     """
     发送报告到服务器
     尽可能保证在致命错误发生时也能传出错误报告
@@ -87,6 +87,29 @@ def onekey_report(report_type=REPORT_SUCCESS, installing_mirror=None, traceback_
 
     if traceback_str is not None and isinstance(traceback_str, str):
         data['traceback'] = traceback_str
+
+    try:
+        import platform
+    except:
+        pass
+    else:
+        try:
+            data['uname'] = json.dumps(dict(zip(
+                platform.uname()._fields,
+                platform.uname()
+            )))
+        except:
+            pass
+    try:
+        data['python_version'] = sys.version
+    except:
+        pass
+
+    try:
+        if msg is not None:
+            data['extra_msg'] = str(msg)
+    except:
+        pass
 
     try:
         if isinstance(email, str) and email:
@@ -156,11 +179,13 @@ except:
     raise
 
 
-def cmd(command, cwd=None, no_tee=False, **kwargs):
+def cmd(command, cwd=None, no_tee=False, allow_failure=False, **kwargs):
     """运行shell命令
     :type command: str
     :type cwd: str
     :type no_tee: bool
+    :type allow_failure: bool
+    :rtype: bool
     """
     global stdout_logger, stdout_logger_last
 
@@ -184,20 +209,33 @@ def cmd(command, cwd=None, no_tee=False, **kwargs):
             **kwargs)
     except:
         traceback.print_exc()
+
+        if allow_failure:
+            try:
+                onekey_report(report_type=REPORT_ERROR,
+                              traceback_str=traceback.format_exc(),
+                              msg="AllowedFailure"
+                              )
+            except:
+                pass
+            return False
+
         print()
         print("**ERROR** command: \n    ", command, "\nerror, installation should be abort.")
         choice = input("Do you want to continue installation anyway?(y/N) ")
         if choice in ("y", "Y", "yes", "Yes"):
             print("Installation continue...")
             try:
-                onekey_report(report_type=REPORT_ERROR, traceback_str="[Continued]\n" + traceback.format_exc())
+                onekey_report(report_type=REPORT_ERROR,
+                              traceback_str=traceback.format_exc(),
+                              msg="Continued")
             except:
                 pass
-            return
+            return False
         else:
             raise
     else:
-        return result
+        return True
 
 
 try:
@@ -335,11 +373,12 @@ question = None
 try:
     # 设置本地时间为北京时间
     try:
-        cmd('cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime')
+        cmd('cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime', allow_failure=True)
     except:
         pass
     # 告诉apt-get要安静
     cmd('export DEBIAN_FRONTEND=noninteractive')
+    os.environ['DEBIAN_FRONTEND'] = "noninteractive"
     # 更新apt-get
     cmd('apt-get -y -q update')
     # 安装必须的包
@@ -347,20 +386,16 @@ try:
     # 安装非必须的包
     try:
         # 更新一下openssl
-        cmd('apt-get -y -q install openssl')
+        cmd('apt-get -y -q install openssl', allow_failure=True)
     except:
         pass
-    try:
-        # 如果安装了, 则可以启用http2
-        cmd('apt-get -y -q install software-properties-common python-software-properties')
-    except:
-        ppa_available = False
-    else:
-        ppa_available = True
+
+    # 如果安装了, 则可以启用http2
+    ppa_available = cmd('apt-get -y -q install software-properties-common python-software-properties', allow_failure=True)
 
     if distro.id() == 'ubuntu' and ppa_available:
         # 安装高版本的Apache2(支持http2), 仅限ubuntu
-        cmd("""LC_ALL=C.UTF-8 add-apt-repository ppa:ondrej/apache2 &&
+        cmd("""LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/apache2 &&
     apt-key update &&
     apt-get -y -q update &&
     apt-get -y -q install apache2""")
@@ -370,25 +405,21 @@ try:
 
     cmd("""a2enmod rewrite mime include headers filter expires deflate autoindex setenvif ssl""")
 
-    try:
-        cmd("a2enmod http2")
-    except:
+    if not cmd("a2enmod http2", allow_failure=True):
         print("[Warning!] your server does not support http2")
 
     # (可选) 更新一下各种包
     if not (distro.id() == 'ubuntu' and distro.version() == '14.04'):  # 系统不是ubuntu 14.04
         # Ubuntu 14.04 执行本命令的时候会弹一个postfix的交互, 所以不执行
-        cmd('apt-get -y -q upgrade')
+        cmd('apt-get -y -q upgrade', allow_failure=True)
 
     cmd("""apt-get -y -q install libapache2-mod-wsgi-py3&& a2enmod wsgi""")
 
     # 安装和更新必须的python包
     cmd('python3 -m pip install -U requests flask')
-    # 安装和更新非必须, 但是有好处的python包
-    try:
-        cmd('python3 -m pip install -U chardet fastcache cchardet')
-    except:
-        pass  # 允许安装失败
+
+    # 安装和更新非必须, 但是有好处的python包, 允许失败
+    cmd('python3 -m pip install -U chardet fastcache cchardet', allow_failure=True)
 
     print('[zmirror] Dependency packages install completed')
     print('[zmirror] Installing letsencrypt...')
@@ -418,7 +449,7 @@ try:
           '[zmirror] Now we need some information:')
 except KeyboardInterrupt:
     print("Aborting...")
-    onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
+    onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc(), msg="KeyboardInterrupt")
     raise
 except:
     onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
@@ -785,7 +816,10 @@ try:
             fp.seek(0)  # 指针返回文件头
             fp.write(content)  # 回写
 
-    shutil.rmtree(zmirror_source_folder)  # 删除无用的 zmirror 文件夹
+    try:
+        shutil.rmtree(zmirror_source_folder)  # 删除无用的 zmirror 文件夹
+    except:
+        pass
 
     print("[zmirror] zmirror program folders deploy completed")
 
@@ -887,19 +921,23 @@ try:
         )
 except KeyboardInterrupt:
     print("Aborting...")
-    onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
+    onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc(), msg="KeyboardInterrupt")
     raise
 except:
     onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc(), installing_mirror=mirrors_to_deploy)
     raise
 
+print("Finishing...")
 try:
     onekey_report(report_type=REPORT_SUCCESS, installing_mirror=mirrors_to_deploy)
 except:
-    onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
+    try:
+        onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc(), msg="SuccessReportError")
+    except:
+        pass
 
 # ####### 完成 ########
-print("Completed.\n")
+print("Congratulation!")
 # 最后打印一遍配置
 print("------------ mirrors ------------")
 for mirror in mirrors_to_deploy:
