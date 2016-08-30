@@ -706,24 +706,46 @@ try:
                 continue
 
             print("Obtaining: {domain}".format(domain=domain))
-            cmd(
-                ('./certbot-auto certonly -n --agree-tos -t -m "{email}" --standalone -d "{domain}" '
-                 '--pre-hook "/usr/sbin/service apache2 stop" '
-                 '--post-hook "/usr/sbin/service apache2 start"'
-                 ).format(email=email, domain=domain),
-                cwd='/etc/certbot/',
-                # 在ubuntu 14.04下, tee会出现无法正常结束的bug, 所以此时不能再用tee #1
-                no_tee=distro.id() == 'ubuntu' and distro.version() == '14.04',
-            )
+            for i in range(1, 5):
+                try:
+                    cmd(
+                        ('./certbot-auto certonly -n --agree-tos -t -m "{email}" --standalone -d "{domain}" '
+                         '--pre-hook "/usr/sbin/service apache2 stop" '
+                         '--post-hook "/usr/sbin/service apache2 start"'
+                         ).format(email=email, domain=domain),
+                        cwd='/etc/certbot/',
+                        # 在ubuntu 14.04下, tee会出现无法正常结束的bug, 所以此时不能再用tee #1
+                        no_tee=distro.id() == 'ubuntu' and distro.version() == '14.04',
+                    )
 
-            # 检查是否成功获取证书
-            if not os.path.exists('/etc/letsencrypt/live/{domain}'.format(domain=domain)):
+                    # 检查是否成功获取证书(文件是否存在)
+                    if not os.path.exists('/etc/letsencrypt/live/{domain}'.format(domain=domain)):
+                        print("[zmirror-ERROR] cert file for {domain} does not exist!".format(domain=domain))
+                        raise RuntimeError("[zmirror-ERROR] cert file for {domain} does not exist!".format(domain=domain))
+
+                except:
+                    print("[zmirror-ERROR] unable to obtaining cert for {domain}".format(domain=domain))
+                    if i != 4:
+                        print("[zmirror] wait 5 seconds and retry. ({}/3)".format(i))
+                        onekey_report(report_type=REPORT_ERROR,
+                                      installing_mirror=mirrors_to_deploy,
+                                      traceback_str=traceback.format_exc())
+                        for _ in range(4, 0, -1):
+                            sleep(1)
+                            print(_, "...")
+
+                else:
+                    print("Succeed: {domain}".format(domain=domain))
+                    break
+
+            # 进入这个else, 表示所有尝试均失败
+            else:
                 print('[ERROR] Could NOT obtain an ssl cert, '
                       'please check your DNS record, '
                       'and then run again.\n'
                       'Installation abort')
                 exit(3)
-            print("Succeed: {domain}".format(domain=domain))
+
         cmd("service apache2 start",  # 重新启动apache
             # ubuntu14.04下, 使用tee会出现无法正常退出的bug, 所以禁用掉
             no_tee=distro.id() == 'ubuntu' and distro.version() == '14.04'
