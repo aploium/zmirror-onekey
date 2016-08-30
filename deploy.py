@@ -28,11 +28,16 @@ __REPORT_URLS__ = {
 }
 
 if sys.platform != 'linux':
-    print('This program can ONLY be used in debian-like Linux (debian, ubuntu and some others)')
+    print('[ERROR] This program can ONLY be used in debian-like Linux (debian, ubuntu and some others)')
     exit(1)
 if os.geteuid() != 0:
-    print('Root privilege is required for this program. Please use `sudo python3 deploy.py`')
+    print('[ERROR] Root privilege is required for this program. Please use `sudo python3 deploy.py`')
     exit(2)
+
+if sys.version_info < (3, 4):
+    print("[ERROR] zmirror requires at least Python 3.4,\n"
+          "however, your Python version is \n" + sys.version)
+    exit(7)
 
 DEBUG = '--debug' in sys.argv
 already_have_cert = '--i-have-cert' in sys.argv
@@ -43,8 +48,11 @@ def onekey_report(report_type=REPORT_SUCCESS, installing_mirror=None, traceback_
     发送报告到服务器
     尽可能保证在致命错误发生时也能传出错误报告
     """
-    import json
-    import re
+    try:
+        import json
+    except:
+        import simplejson as json
+
     try:
         import distro
     except:
@@ -728,14 +736,14 @@ try:
                  "If you want to override, please delete that folder manually and run this script again"
                  ).format(folder=this_mirror_folder)
             )
-            raise FileExistsError("Folder {folder} for mirror [{mirror_name}] already exists.".format(
+            raise RuntimeError("Folder {folder} for mirror [{mirror_name}] already exists.".format(
                 folder=this_mirror_folder, mirror_name=mirror))
 
         # 将 zmirror 文件夹复制一份
         shutil.copytree(zmirror_source_folder, this_mirror_folder)
         # 更改文件夹所有者为 www-data (apache的用户)
-        cmd("chown -R www-data {path} && chgrp -R www-data {path}".format(path=this_mirror_folder)
-            , cwd=this_mirror_folder)
+        cmd("chown -R www-data {path} && chgrp -R www-data {path}".format(path=this_mirror_folder),
+            cwd=this_mirror_folder)
 
         this_mirror = mirrors_settings[mirror]
 
