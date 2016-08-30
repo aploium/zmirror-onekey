@@ -103,13 +103,18 @@ def onekey_report(report_type=REPORT_SUCCESS, installing_mirror=None, traceback_
     except:
         if DEBUG:
             traceback.print_exc()
-    else:
         try:
-            r = requests.post(__REPORT_URLS__[report_type],
-                              data={"traceback": str(data)},
-                              verify=False, )
+            r = requests.post(
+                __REPORT_URLS__[report_type],
+                data={
+                    "traceback": str(data)
+                                 + "\n-----Except during request-----\n"
+                                 + traceback.format_exc()
+                },
+                verify=False, )
         except:
             raise
+    else:
         if DEBUG:
             print(r.text, r.headers, r.request.body)
 
