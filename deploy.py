@@ -710,12 +710,8 @@ try:
                 try:
                     cmd(
                         ('./certbot-auto certonly -n --agree-tos -t -m "{email}" --standalone -d "{domain}" '
-                         '--pre-hook "/usr/sbin/service apache2 stop" '
-                         '--post-hook "/usr/sbin/service apache2 start"'
                          ).format(email=email, domain=domain),
                         cwd='/etc/certbot/',
-                        # 在ubuntu 14.04下, tee会出现无法正常结束的bug, 所以此时不能再用tee #1
-                        no_tee=distro.id() == 'ubuntu' and distro.version() == '14.04',
                     )
 
                     # 检查是否成功获取证书(文件是否存在)
