@@ -820,6 +820,7 @@ try:
                 ('domain', domain),
                 ('mirror_name', mirror),
                 ('path_to_wsgi_py', os.path.join(this_mirror_folder, 'wsgi.py')),
+                ('this_mirror_folder', this_mirror_folder),
             ]:
                 conf = conf.replace("{{%s}}" % key, value)
 
