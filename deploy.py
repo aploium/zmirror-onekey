@@ -631,8 +631,7 @@ try:
         logging.debug(mirrors_to_deploy)
 
     if not mirrors_to_deploy:
-        print('[ERROR] you didn\'t select any mirror.\nAbort installation')
-        exit(4)
+        raise RuntimeError('[ERROR] you didn\'t select any mirror.\nAbort installation')
 
     if not already_have_cert:
         print()
@@ -709,11 +708,13 @@ try:
             print("Obtaining: {domain}".format(domain=domain))
             for i in range(1, 5):
                 try:
-                    cmd(
+                    result = cmd(
                         ('./certbot-auto certonly -n --agree-tos -t -m "{email}" --standalone -d "{domain}" '
                          ).format(email=email, domain=domain),
-                        cwd='/etc/certbot/',
+                        cwd='/etc/certbot/', allow_failure=True
                     )
+                    if not result:
+                        raise RuntimeError("unable to obtaining cert for {domain}".format(domain=domain))
 
                     # 检查是否成功获取证书(文件是否存在)
                     if not os.path.exists('/etc/letsencrypt/live/{domain}'.format(domain=domain)):
@@ -741,7 +742,7 @@ try:
                       'please check your DNS record, '
                       'and then run again.\n'
                       'Installation abort')
-                exit(3)
+                raise RuntimeError("[zmirror-ERROR] unable to obtaining cert for {domain}".format(domain=domain))
 
         cmd("service apache2 start",  # 重新启动apache
             # ubuntu14.04下, 使用tee会出现无法正常退出的bug, 所以禁用掉
