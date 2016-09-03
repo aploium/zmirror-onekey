@@ -57,11 +57,17 @@
 
 ## FAQ
 
-1. **有没有部署完成的Demo?**  
+ 1. **有没有部署完成的Demo?**  
 
     当然有, 请戳 [zmirror-demo](https://github.com/aploium/zmirror#demo)  
 
-2. **安装完成后各个程序的文件夹在哪?**  
+ 2. **我没有自己的域名**  
+
+    有一些提供免费(也没有注册门槛)域名的注册商  
+    比如最有名的 [.tk 域名](http://www.dot.tk/) 和后面出来的 [.cf 域名](http://www.dot.cf/)  
+    可以快速注册免费的域名  
+
+ 4. **安装完成后各个程序的文件夹在哪?**  
 
     * *zmirror*  
         安装在 `/var/www/镜像名` 文件夹下  
@@ -77,7 +83,7 @@
         后缀为 _error 的日志文件中, 同时包含了stdout的输出(无论是否是错误), 对debug会有帮助  
         
 
-3. **为什么安装的是Apache, 而不是Nginx, 我可以选择吗?**  
+ 5. **为什么安装的是Apache, 而不是Nginx, 我可以选择吗?**  
     
     因为Apache的wsgi对python更友好  
     而且Nginx没有Visual Host功能  
@@ -87,23 +93,23 @@
     手动部署可以参考 [zmirror wiki](https://github.com/aploium/zmirror/wiki)  
     当然, 如果你能写一份Nginx部署教程, 我会很感谢的~ :)  
 
-4. **安装的Apache版本?**
+ 6. **安装的Apache版本?**
     
     在Ubuntu中, 使用的是 PPA:ondrej/apache2 理论上应该是最新版, 或者接近最新版(2.4.23+)  
     在Debian8中, 使用系统的 apt-get 安装, 版本比较旧, 所以Debian不支持HTTP/2  
 
-5. **Let's encrypt 证书自动更新?**
+ 7. **Let's encrypt 证书自动更新?**
 
     安装脚本会自动创建定期更新证书的脚本, 脚本位置为 `/etc/cron.weekly/zmirror-letsencrypt-renew.sh`  
 
-6. **证书有效期为什么只有90天?**
+ 8. **证书有效期为什么只有90天?**
 
     主要是因为Let's encrypt认为, 证书的申请和部署可以自动化时, 90天足够了.  
     具体可以看[这个官方说明](https://community.letsencrypt.org/t/pros-and-cons-of-90-day-certificate-lifetimes/4621)(可能需要自备梯子)  
     本安装脚本会在linux定时任务(crontab)中加入自动续期的脚本, 不用担心证书过期  
     即使自动续期脚本万一失效了, let's encrypt也会在快要过期时邮件通知你  
 
-7. **其他高级功能, 比如说CDN, 在哪?**
+ 9. **其他高级功能, 比如说CDN, 在哪?**
 
     这个脚本只提供最基础的部署, 高级功能需要手动配置  
     请看[config_default.py](https://github.com/aploium/zmirror/blob/master/config_default.py)和[custom_func.sample.py](https://github.com/aploium/zmirror/blob/master/custom_func.sample.py)中的说明  
@@ -116,7 +122,7 @@
     > `config.py`中的设置会覆盖掉`config_default.py`中的同名设置  
     > 除非你是开发者, 否则无论如何都不应该修改`config_default.py`  
 
-8. **网速太慢?**
+10. **网速太慢?**
 
     如果你的VPS提供商允许的话, 可以试试看[net-speeder](https://github.com/snooda/net-speeder)  
     
