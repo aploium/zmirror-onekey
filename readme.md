@@ -46,7 +46,7 @@
 ## 安装过程视频
 请点击下面的图片打开  
 "视频"中的文字可以被选中和复制  
-[![asciicast](https://asciinema.org/a/83322.png)](https://asciinema.org/a/83322)  
+[![Installation demo of zmirror-onekey](https://asciinema.org/a/85170.png)](https://asciinema.org/a/85170)
 
 ## 特性
 
