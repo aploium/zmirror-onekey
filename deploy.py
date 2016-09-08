@@ -194,7 +194,7 @@ def cmd(command, cwd=None, no_tee=False, allow_failure=False, **kwargs):
     stdout_logger_last = stdout_logger
     stdout_logger = StdLogger()
 
-    stdout_logger.write("\n--------\n[zmirror] executing: " + command)
+    stdout_logger.write("\n--------\n[zmirror] executing: " + command + "\n")
 
     if not no_tee:
         command = "({cmd} | tee -a {stdout_file}) 3>&1 1>&2 2>&3 | tee -a {stderr_file}".format(
@@ -706,43 +706,59 @@ try:
                 continue
 
             print("Obtaining: {domain}".format(domain=domain))
-            for i in range(1, 5):
+            i = 0
+            try_limit = 5
+            certbot_cmd = (
+                './certbot-auto certonly -n --agree-tos -t -m "{email}" --standalone -d "{domain}" '
+            ).format(email=email, domain=domain)
+            seconds_to_wait = 4
+            while True:
+                i += 1
+                seconds_to_wait += 1
                 try:
-                    result = cmd(
-                        ('./certbot-auto certonly -n --agree-tos -t -m "{email}" --standalone -d "{domain}" '
-                         ).format(email=email, domain=domain),
-                        cwd='/etc/certbot/', allow_failure=True
-                    )
-                    if not result:
-                        raise RuntimeError("unable to obtaining cert for {domain}".format(domain=domain))
+                    result = cmd(certbot_cmd, cwd='/etc/certbot/', allow_failure=True)
 
                     # 检查是否成功获取证书(文件是否存在)
-                    if not os.path.exists('/etc/letsencrypt/live/{domain}'.format(domain=domain)):
+                    if not result or not os.path.exists('/etc/letsencrypt/live/{domain}'.format(domain=domain)):
                         print("[zmirror-ERROR] cert file for {domain} does not exist!".format(domain=domain))
                         raise RuntimeError("[zmirror-ERROR] cert file for {domain} does not exist!".format(domain=domain))
 
                 except:
                     print("[zmirror-ERROR] unable to obtaining cert for {domain}".format(domain=domain))
-                    if i != 4:
-                        print("[zmirror] wait 5 seconds and retry. ({}/3)".format(i))
-                        onekey_report(report_type=REPORT_ERROR,
-                                      installing_mirror=mirrors_to_deploy,
-                                      traceback_str=traceback.format_exc())
-                        for _ in range(4, 0, -1):
+                    if i <= try_limit:
+                        print("[zmirror] wait {} seconds and retry. ({}/{})".format(seconds_to_wait, i, try_limit))
+                        onekey_report(
+                            report_type=REPORT_ERROR,
+                            installing_mirror=mirrors_to_deploy,
+                            traceback_str=traceback.format_exc(),
+                            msg="({}/{})".format(i, try_limit),
+                        )
+                        for _ in range(seconds_to_wait - 1, 0, -1):
                             sleep(1)
                             print(_, "...")
+                    else:
+                        print()
+                        print("[zmirror-ERROR]\n"
+                              "I'm really sorry that we are not able to obtain an cert now, \n"
+                              "    This problem is NOT caused by zmirror-onekey itself, but caused by your DNS setting or "
+                              "the let's encrypt server. \n"
+                              "    If you had already set your A record correctly, "
+                              "please retry and wait, because sometimes the "
+                              "let's encrypt server may takes minutes or even hours to recognize your DNS settings.\n"
+                              "    If you doesn't sure whether your DNS A record are correct, please check it using "
+                              "https://www.whatsmydns.net/\n"
+                              "    Meanwhile, you can obtain cert manually using:"
+                              )
+                        print("        cd /etc/certbot && " + certbot_cmd)
+                        ch = input("max retries exceed, do you want to continue retry infinity?(y/N) ")
+                        if ch in ("y", "yes", "Yes"):
+                            try_limit += 2000  # 无限尝试
+                        else:
+                            raise
 
                 else:
                     print("Succeed: {domain}".format(domain=domain))
                     break
-
-            # 进入这个else, 表示所有尝试均失败
-            else:
-                print('[ERROR] Could NOT obtain an ssl cert, '
-                      'please check your DNS record, '
-                      'and then run again.\n'
-                      'Installation abort')
-                raise RuntimeError("[zmirror-ERROR] unable to obtaining cert for {domain}".format(domain=domain))
 
         cmd("service apache2 start",  # 重新启动apache
             # ubuntu14.04下, 使用tee会出现无法正常退出的bug, 所以禁用掉
