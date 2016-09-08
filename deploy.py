@@ -438,7 +438,7 @@ try:
     if not already_have_cert:
         if not os.path.exists('/etc/certbot/'):
             # certbot 不存在, 则安装
-            cmd('git clone https://github.com/certbot/certbot.git', cwd='/etc/')
+            cmd('git clone https://github.com/certbot/certbot.git --depth=1', cwd='/etc/')
             cmd('chmod a+x /etc/certbot/certbot-auto', cwd='/etc/certbot/')
             cmd('service apache2 stop')
             cmd('./certbot-auto renew --agree-tos -n --standalone '
@@ -792,7 +792,7 @@ try:
     config_root = this_server['config_root']  # type: str
 
     os.chdir(htdoc)
-    cmd('git clone %s zmirror' % __ZMIRROR_GIT_URL__, cwd=htdoc)
+    cmd('git clone %s zmirror  --depth=1' % __ZMIRROR_GIT_URL__, cwd=htdoc)
     zmirror_source_folder = os.path.join(htdoc, 'zmirror')
 
     # 预删除文件
