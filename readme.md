@@ -21,8 +21,9 @@
 
 * **我没有SSL证书 (如果不懂, 请使用这个)**
     ```bash
-    sudo apt-get install python3 wget -y
-    wget https://raw.githubusercontent.com/aploium/zmirror-onekey/master/deploy.py
+    sudo apt-get -y update && sudo apt-get -y install python3 git
+    git clone https://github.com/aploium/zmirror-onekey.git --depth=1
+    cd zmirror-onekey
     sudo python3 deploy.py
     ```
     然后按照脚本给予的提示继续, 过程中会自动获取SSL证书  
@@ -33,7 +34,7 @@
   
 * **我已有SSL证书**  
     如果已有证书, 希望使用自己提供的证书, 而不是通过 let's encrypt 获取  
-    请将上面代码中的第三行替换成下面的样子, 在运行期间会提示你输入证书路径的:  
+    请将上面代码中的第四行替换成下面的样子, 在运行期间会提示你输入证书路径的:  
     ```bash
     sudo python3 deploy.py --i-have-cert
     ```
