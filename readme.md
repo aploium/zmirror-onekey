@@ -149,4 +149,12 @@
     如果不能确定是否正常设置, 可以访问 https://www.whatsmydns.net/ , 这个网站可以在全球范围内查询A记录  
     如果查询出的A记录与你的IP相同, 就表示设置成功了, 此时只需要让脚本自行尝试即可  
     
-
+ 11. #### 更新zmirror
+   
+    请运行以下代码(假设`zmirror-onekey`是本脚本文件夹):  
+    ```bash
+    cd zmirror-onekey
+    git pull
+    sudo python3 deploy.py --upgrade-only
+    ```
+    注意: 更新zmirror以后会自动重启Apache  

@@ -49,6 +49,7 @@ if sys.version_info < (3, 4):
 
 DEBUG = '--debug' in sys.argv
 already_have_cert = '--i-have-cert' in sys.argv
+upgrade_only = "--upgrade-only" in sys.argv
 
 if DEBUG:
     ColorfulPyPrint_set_verbose_level(3)
@@ -375,6 +376,44 @@ infoprint('You could cancel this script in the config stage by precessing Ctrl-C
 infoprint('Installation will start after 1 second')
 print()
 sleep(1)
+
+# ################# 仅升级 ##########################
+if upgrade_only:
+    infoprint("Upgrade Only")
+    htdoc = server_configs["apache"]['htdoc']  # type: str
+    success_count = 0
+    for mirror, values in mirrors_settings.items():
+        this_mirror_folder = os.path.join(htdoc, mirror)
+
+        # 如果文件夹不存在, 则跳过
+        if not os.path.exists(this_mirror_folder):
+            infoprint("Mirror:", mirror, "not found, skipping")
+
+        # 否则进行升级
+        infoprint("Upgrading:", mirror)
+        try:
+            cmd("git pull", cwd=this_mirror_folder)
+        except:
+            warnprint("Unable to upgrade:", mirror)
+            onekey_report(
+                report_type=REPORT_ERROR,
+                traceback_str=traceback.format_exc(),
+                msg="Unable to upgrade:" + mirror
+            )
+        else:
+            success_count += 1
+
+    if success_count:
+        infoprint("zmirror upgrade complete, restarting apache2 ")
+        try:
+            cmd("service apache2 restart", no_tee=True)
+        except:
+            errprint("Unable to restart apache2, please execute `service apache2 restart` manually")
+            onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
+        else:
+            onekey_report(report_type=REPORT_SUCCESS, msg="Success Count:{}".format(success_count))
+
+    exit()
 
 # ################# 安装一些依赖包 ####################
 infoprint('Installing some necessarily packages')
