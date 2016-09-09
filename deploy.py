@@ -234,7 +234,7 @@ def cmd(command, cwd=None, no_tee=False, allow_failure=None, **kwargs):
 
         if allow_failure is None:
             print()
-            errprint("**ERROR** command: \n    ", command, "\nerror, installation should be abort.")
+            errprint("command: \n    ", command, "\nerror, installation should be abort.")
             choice = input("Do you want to continue installation anyway?(y/N) ")
             if choice in ("y", "Y", "yes", "Yes"):
                 infoprint("Installation continue...")
@@ -418,7 +418,7 @@ if upgrade_only:
         try:
             cmd("git pull", cwd=this_mirror_folder, allow_failure=False)
         except:
-            warnprint("Unable to upgrade:", mirror)
+            errprint("Unable to upgrade:", mirror)
             onekey_report(
                 report_type=REPORT_ERROR,
                 traceback_str=traceback.format_exc(),
@@ -481,6 +481,7 @@ try:
 
     if not cmd("a2enmod http2", allow_failure=True):
         warnprint("[Warning!] your server does not support http2")
+        sleep(0.5)
 
     # (可选) 更新一下各种包
     if not (distro.id() == 'ubuntu' and distro.version() == '14.04'):  # 系统不是ubuntu 14.04
@@ -576,7 +577,8 @@ try:
         try:
             _input = int(_input)
         except:
-            warnprint("Please input correct number")
+            errprint("Please input correct number")
+            sleep(1)
             _input = -1
 
         if _input == 0:
@@ -598,9 +600,10 @@ try:
 
         # 镜像已经安装, 则不允许选择
         if mirrors_settings[mirror_type]["installed_path"]:
-            warnprint("You can not select this mirror", mirror_type, "because it was already installed in",
-                      mirrors_settings[mirror_type]["installed_path"])
-            warnprint("If you want to upgrade it, please use `python3 deploy.py --upgrade-only`")
+            errprint("You can not select this mirror", mirror_type, "because it was already installed in",
+                     mirrors_settings[mirror_type]["installed_path"])
+            infoprint("If you want to upgrade it, please use `python3 deploy.py --upgrade-only`")
+            sleep(1)
             continue
 
         # 在选项里, 镜像已存在, 则删去, 并且跳过下面的步骤
@@ -608,6 +611,7 @@ try:
             mirrors_to_deploy.remove(mirror_type)
             mirrors_settings[mirror_type]['domain'] = None
             infoprint("Mirror:{mirror_type} unchecked.".format(mirror_type=mirror_type))
+            sleep(1)
             continue
 
         # 输入镜像对应的域名, 要求已经在DNS设置中用一个A记录指向了本服务器
@@ -616,13 +620,16 @@ try:
             domain = input("Please input *your* domain for this mirror: ")
             domain = domain.strip(' /.\t').replace('https://', '').replace('http://', '')  # 修剪
             if domain.count('.') != 2:
-                if input(("Your domain [{domain}] is not an third-level domain, "
-                          "which contains three parts and two dots. \n"
-                          "    eg1: lovelucia.zmirrordemo.com eg2: g.mymirror.com\n"
-                          "    zmirror officially only support third-level domain\n"
-                          "    a none third-level domain MAY work, but may cause potential errors\n"
-                          "Continue anyway(y/N)?"
-                          ).format(domain=domain)) in ('y', 'yes', 'Yes', 'YES'):
+                warnprint(
+                    "Your domain [",
+                    domain,
+                    "] is not an third-level domain, which contains three parts and two dots. \n"
+                    "    eg1: lovelucia.zmirrordemo.com eg2: g.mymirror.com\n"
+                    "    zmirror officially only support third-level domain\n"
+                    "    a none third-level domain MAY work, but may cause potential errors\n"
+
+                )
+                if input("Continue anyway (y/N)? ") in ('y', 'yes', 'Yes', 'YES'):
                     break
                     # 如果选择的是 N, 则重新输入
             else:  # 输入的是三级域名
@@ -657,7 +664,8 @@ try:
         _dup_flag = False
         for mirror in mirrors_to_deploy:
             if mirrors_settings[mirror]['domain'] == domain and mirror != mirror_type:
-                warnprint("Duplicated domain! conflict with mirror: " + mirror)
+                errprint("Duplicated domain! conflict with mirror: " + mirror)
+                sleep(0.5)
                 _dup_flag = True
                 break
         if _dup_flag:
@@ -674,7 +682,8 @@ try:
                     "(should not be blank): "
                 )
                 if not private_key or not os.path.exists(private_key):
-                    warnprint("file", private_key, "does not exist")
+                    errprint("file", private_key, "does not exist")
+                    sleep(0.5)
                 else:
                     break
 
@@ -688,7 +697,8 @@ try:
                     + "(should not be blank): "
                 )
                 if not cert or not os.path.exists(cert):
-                    warnprint("file", cert, "does not exist")
+                    errprint("file", cert, "does not exist")
+                    sleep(0.5)
                 else:
                     break
 
@@ -702,7 +712,8 @@ try:
                     "(should not be blank): "
                 )
                 if not cert_chain or not os.path.exists(cert_chain):
-                    warnprint("file", cert_chain, "does not exist")
+                    errprint("file", cert_chain, "does not exist")
+                    sleep(0.5)
                 else:
                     break
 
@@ -754,11 +765,13 @@ try:
         while True:
             name = input("Please input the question: ")
             if not name:
-                warnprint("    question should not be blank")
+                errprint("    question should not be blank")
+                sleep(0.3)
                 continue
             answer = input("Please input the answer (act as password): ")
             if not answer:
-                warnprint("    answer should not be blank")
+                errprint("    answer should not be blank")
+                sleep(0.3)
                 continue
             hint = input("Please input the hint (optional, press [ENTER] to skip): ")
             question = {"name": name, "answer": answer, "hint": hint}
@@ -797,6 +810,7 @@ try:
             if os.path.exists('/etc/letsencrypt/live/{domain}'.format(domain=domain)):
                 # 如果证书已存在, 则跳过
                 warnprint("Certification for {domain} already exists, skipping".format(domain=domain))
+                sleep(0.2)
                 continue
 
             infoprint("Obtaining: {domain}".format(domain=domain))
@@ -970,6 +984,7 @@ try:
 
         if os.path.exists(file_path):  # 若配置文件已存在则跳过
             warnprint("Config {path} already exists, skipping".format(path=file_path))
+            sleep(0.2)
             continue
 
         with open(file_path, 'w', encoding='utf-8') as fp:
@@ -988,6 +1003,7 @@ try:
 
             if os.path.exists(file_path):  # 若配置文件已存在则跳过
                 warnprint("Config {path} already exists, skipping".format(path=file_path))
+                sleep(0.2)
                 continue
 
             infoprint("downloading: ", mirror, conf_name)
@@ -1081,6 +1097,7 @@ if distro.id() == 'debian' or distro.id() == 'ubuntu' and distro.version() == '1
     print()
     warnprint("[WARING] your system does NOT support HTTP/2! HTTP/2 would not be available\n"
               "If you want to use HTTP/2, please use Ubuntu 14.04/15.10/16.04")
+    sleep(1)
 
 print()
 infoprint("FAQs are here: http://tinyurl.com/zmirrorfaq")
