@@ -617,7 +617,7 @@ try:
         # 输入镜像对应的域名, 要求已经在DNS设置中用一个A记录指向了本服务器
         print()  # 打印一个空行
         while True:  # 这里面会检查输入的是否是三级域名
-            domain = input("Please input *your* domain for this mirror: ")
+            domain = input("Please input *your* domain for this mirror (", mirror_type, "): ")
             domain = domain.strip(' /.\t').replace('https://', '').replace('http://', '')  # 修剪
             if domain.count('.') != 2:
                 warnprint(
