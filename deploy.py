@@ -191,7 +191,7 @@ except:
     raise
 
 
-def cmd(command, cwd=None, no_tee=False, allow_failure=False, **kwargs):
+def cmd(command, cwd=None, no_tee=False, allow_failure=None, **kwargs):
     """运行shell命令
     :type command: str
     :type cwd: str
@@ -222,7 +222,7 @@ def cmd(command, cwd=None, no_tee=False, allow_failure=False, **kwargs):
     except:
         traceback.print_exc()
 
-        if allow_failure:
+        if allow_failure is True:
             try:
                 onekey_report(report_type=REPORT_ERROR,
                               traceback_str=traceback.format_exc(),
@@ -232,20 +232,22 @@ def cmd(command, cwd=None, no_tee=False, allow_failure=False, **kwargs):
                 pass
             return False
 
-        print()
-        errprint("**ERROR** command: \n    ", command, "\nerror, installation should be abort.")
-        choice = input("Do you want to continue installation anyway?(y/N) ")
-        if choice in ("y", "Y", "yes", "Yes"):
-            infoprint("Installation continue...")
-            try:
-                onekey_report(report_type=REPORT_ERROR,
-                              traceback_str=traceback.format_exc(),
-                              msg="Continued")
-            except:
-                pass
-            return False
-        else:
-            raise
+        if allow_failure is None:
+            print()
+            errprint("**ERROR** command: \n    ", command, "\nerror, installation should be abort.")
+            choice = input("Do you want to continue installation anyway?(y/N) ")
+            if choice in ("y", "Y", "yes", "Yes"):
+                infoprint("Installation continue...")
+                try:
+                    onekey_report(report_type=REPORT_ERROR,
+                                  traceback_str=traceback.format_exc(),
+                                  msg="Continued")
+                except:
+                    pass
+                return False
+            else:
+                raise
+        raise
     else:
         return True
 
@@ -388,11 +390,12 @@ if upgrade_only:
         # 如果文件夹不存在, 则跳过
         if not os.path.exists(this_mirror_folder):
             infoprint("Mirror:", mirror, "not found, skipping")
+            continue
 
         # 否则进行升级
         infoprint("Upgrading:", mirror)
         try:
-            cmd("git pull", cwd=this_mirror_folder)
+            cmd("git pull", cwd=this_mirror_folder, allow_failure=False)
         except:
             warnprint("Unable to upgrade:", mirror)
             onekey_report(
@@ -406,7 +409,7 @@ if upgrade_only:
     if success_count:
         infoprint("zmirror upgrade complete, restarting apache2 ")
         try:
-            cmd("service apache2 restart", no_tee=True)
+            cmd("service apache2 restart", no_tee=True, allow_failure=False)
         except:
             errprint("Unable to restart apache2, please execute `service apache2 restart` manually")
             onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
