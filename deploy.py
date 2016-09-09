@@ -856,8 +856,8 @@ try:
                             "    If you doesn't sure whether your DNS A record are correct, please check it using "
                             "https://www.whatsmydns.net/\n"
                             "    Meanwhile, you can obtain cert manually using:"
+                            "        cd /etc/certbot && " + certbot_cmd
                         )
-                        print("        cd /etc/certbot && " + certbot_cmd)
                         infoprint("For more information, please see http://tinyurl.com/zmcert")
                         ch = input("max retries exceed, do you want to continue retry infinity?(Y/n) ")
                         if ch in ("N", "n", "No", "no", "NO", "none", "None"):
