@@ -845,7 +845,7 @@ try:
                             sleep(1)
                             infoprint(_, "...")
                     else:
-                        infoprint(
+                        errprint(
                             "\n"
                             "I'm really sorry that we are not able to obtain an cert now, \n"
                             "    This problem is NOT caused by zmirror-onekey itself, but caused by your DNS setting or "
