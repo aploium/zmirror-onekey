@@ -764,6 +764,7 @@ try:
                             "    Meanwhile, you can obtain cert manually using:"
                         )
                         print("        cd /etc/certbot && " + certbot_cmd)
+                        infoprint("For more information, please see http://tinyurl.com/zmcert")
                         ch = input("max retries exceed, do you want to continue retry infinity?(Y/n) ")
                         if ch in ("N", "n", "No", "no", "NO", "none", "None"):
                             errprint("Aborting...")
@@ -1001,6 +1002,7 @@ if distro.id() == 'debian' or distro.id() == 'ubuntu' and distro.version() == '1
               "If you want to use HTTP/2, please use Ubuntu 14.04/15.10/16.04")
 
 print()
+infoprint("FAQs are here: http://tinyurl.com/zmirrorfaq")
 infoprint("For more information, please view zmirror's github: ", __ZMIRROR_PROJECT_URL__)
 infoprint("Contribution and Issues are more than welcomed.")
 infoprint("btw, if you feeling good, I'll be grateful for your Star in github :)")
