@@ -335,6 +335,7 @@ mirrors_settings = {
             "cert": None,
             "intermediate": None,
         },
+        "installed_path": "",
     },
 
     'youtubePC': {
@@ -342,6 +343,7 @@ mirrors_settings = {
         'cfg': [('more_configs/config_youtube.py', 'config.py'),
                 ('more_configs/custom_func_youtube.py', 'custom_func.py')],
         "certs": {},
+        "installed_path": "",
     },
 
     'youtubeMobile': {
@@ -349,6 +351,7 @@ mirrors_settings = {
         'cfg': [('more_configs/config_youtube_mobile.py', 'config.py'),
                 ('more_configs/custom_func_youtube.py', 'custom_func.py')],
         "certs": {},
+        "installed_path": "",
     },
 
     'twitterPC': {
@@ -356,6 +359,7 @@ mirrors_settings = {
         'cfg': [('more_configs/config_twitter_pc.py', 'config.py'),
                 ('more_configs/custom_func_twitter.py', 'custom_func.py'), ],
         "certs": {},
+        "installed_path": "",
     },
 
     'twitterMobile': {
@@ -363,12 +367,14 @@ mirrors_settings = {
         'cfg': [('more_configs/config_twitter_mobile.py', 'config.py'),
                 ('more_configs/custom_func_twitter.py', 'custom_func.py'), ],
         "certs": {},
+        "installed_path": "",
     },
 
     'instagram': {
         'domain': None,
         'cfg': [('more_configs/config_instagram.py', 'config.py'), ],
         "certs": {},
+        "installed_path": "",
     },
 }
 
@@ -378,6 +384,14 @@ infoprint('You could cancel this script in the config stage by precessing Ctrl-C
 infoprint('Installation will start after 1 second')
 print()
 sleep(1)
+# ################# 检测镜像是否已安装 ################
+htdoc = server_configs["apache"]['htdoc']  # type: str
+for mirror, values in list(mirrors_settings.items()):
+    this_mirror_folder = os.path.join(htdoc, mirror)
+    # 如果文件夹不存在, 则跳过
+    if os.path.exists(this_mirror_folder):
+        infoprint("Mirror:", mirror, "was already installed in", this_mirror_folder)
+        mirrors_settings[mirror]["installed_path"] = this_mirror_folder
 
 # ################# 仅升级 ##########################
 if upgrade_only:
@@ -392,10 +406,10 @@ if upgrade_only:
     cmd("python3 -m pip install -U fastcache", allow_failure=True)
 
     for mirror, values in mirrors_settings.items():
-        this_mirror_folder = os.path.join(htdoc, mirror)
+        this_mirror_folder = values["installed_path"]
 
         # 如果文件夹不存在, 则跳过
-        if not os.path.exists(this_mirror_folder):
+        if not this_mirror_folder or not os.path.exists(this_mirror_folder):
             infoprint("Mirror:", mirror, "not found, skipping")
             continue
 
@@ -533,12 +547,23 @@ try:
       0. Go to next steps. (OK, I have selected all mirror(s) I want to deploy)
 
     input 0-6: """.format(
-                google='[SELECTED]' if 'google' in mirrors_to_deploy else '',
-                twitterPC='[SELECTED]' if 'twitterPC' in mirrors_to_deploy else '',
-                twitterMobile='[SELECTED]' if 'twitterMobile' in mirrors_to_deploy else '',
-                youtubePC='[SELECTED]' if 'youtubePC' in mirrors_to_deploy else '',
-                youtubeMobile='[SELECTED]' if 'youtubeMobile' in mirrors_to_deploy else '',
-                instagram='[SELECTED]' if 'instagram' in mirrors_to_deploy else '',
+                google='[SELECTED]' if 'google' in mirrors_to_deploy else (
+                    "[INSTALLED]" if mirrors_settings["google"]["installed_path"] else ""),
+
+                twitterPC='[SELECTED]' if 'twitterPC' in mirrors_to_deploy else (
+                    "[INSTALLED]" if mirrors_settings["twitterPC"]["installed_path"] else ""),
+
+                twitterMobile='[SELECTED]' if 'twitterMobile' in mirrors_to_deploy else (
+                    "[INSTALLED]" if mirrors_settings["twitterMobile"]["installed_path"] else ""),
+
+                youtubePC='[SELECTED]' if 'youtubePC' in mirrors_to_deploy else (
+                    "[INSTALLED]" if mirrors_settings["youtubePC"]["installed_path"] else ""),
+
+                youtubeMobile='[SELECTED]' if 'youtubeMobile' in mirrors_to_deploy else (
+                    "[INSTALLED]" if mirrors_settings["youtubeMobile"]["installed_path"] else ""),
+
+                instagram='[SELECTED]' if 'instagram' in mirrors_to_deploy else (
+                    "[INSTALLED]" if mirrors_settings["instagram"]["installed_path"] else ""),
             )
 
         )
@@ -546,7 +571,7 @@ try:
         if not _input:
             break
 
-        logging.debug("input:" + _input)
+        dbgprint("input:" + _input)
 
         try:
             _input = int(_input)
@@ -570,6 +595,13 @@ try:
             5: "youtubeMobile",
             6: "instagram",
         }[_input]
+
+        # 镜像已经安装, 则不允许选择
+        if mirrors_settings[mirror_type]["installed_path"]:
+            warnprint("You can not select this mirror", mirror_type, "because it was already installed in",
+                      mirrors_settings[mirror_type]["installed_path"])
+            warnprint("If you want to upgrade it, please use `python3 deploy.py --upgrade-only`")
+            continue
 
         # 在选项里, 镜像已存在, 则删去, 并且跳过下面的步骤
         if mirror_type in mirrors_to_deploy:
