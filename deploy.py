@@ -843,9 +843,8 @@ try:
                         )
                         for _ in range(seconds_to_wait - 1, 0, -1):
                             sleep(1)
-                            print(_, "...")
+                            infoprint(_, "...")
                     else:
-                        print()
                         infoprint(
                             "\n"
                             "I'm really sorry that we are not able to obtain an cert now, \n"
