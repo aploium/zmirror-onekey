@@ -384,6 +384,14 @@ if upgrade_only:
     infoprint("Upgrade Only")
     htdoc = server_configs["apache"]['htdoc']  # type: str
     success_count = 0
+
+    infoprint("Upgrading dependencies")
+    cmd("python3 -m pip install -U pip", allow_failure=True)
+    cmd("python3 -m pip install -U setuptools", allow_failure=True)
+    cmd("python3 -m pip install -U flask requests", allow_failure=True)
+    cmd("python3 -m pip install -U cchardet", allow_failure=True)
+    cmd("python3 -m pip install -U fastcache", allow_failure=True)
+
     for mirror, values in mirrors_settings.items():
         this_mirror_folder = os.path.join(htdoc, mirror)
 
