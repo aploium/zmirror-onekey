@@ -68,7 +68,7 @@
     比如最有名的 [.tk 域名](http://www.dot.tk/) 和后面出来的 [.cf 域名](http://www.dot.cf/)  
     可以快速注册免费的域名  
 
- 4. **安装完成后各个程序的文件夹在哪?**  
+ 3. **安装完成后各个程序的文件夹在哪?**  
 
     * *zmirror*  
         安装在 `/var/www/镜像名` 文件夹下  
@@ -84,7 +84,7 @@
         后缀为 _error 的日志文件中, 同时包含了stdout的输出(无论是否是错误), 对debug会有帮助  
         
 
- 5. **为什么安装的是Apache, 而不是Nginx, 我可以选择吗?**  
+ 4. **为什么安装的是Apache, 而不是Nginx, 我可以选择吗?**  
     
     因为Apache的wsgi对python更友好  
     而且Nginx没有Visual Host功能  
@@ -94,23 +94,23 @@
     手动部署可以参考 [zmirror wiki](https://github.com/aploium/zmirror/wiki)  
     当然, 如果你能写一份Nginx部署教程, 我会很感谢的~ :)  
 
- 6. **安装的Apache版本?**
+ 5. **安装的Apache版本?**
     
     在Ubuntu中, 使用的是 PPA:ondrej/apache2 理论上应该是最新版, 或者接近最新版(2.4.23+)  
     在Debian8中, 使用系统的 apt-get 安装, 版本比较旧, 所以Debian不支持HTTP/2  
 
- 7. **Let's encrypt 证书自动更新?**
+ 6. **Let's encrypt 证书自动更新?**
 
     安装脚本会自动创建定期更新证书的脚本, 脚本位置为 `/etc/cron.weekly/zmirror-letsencrypt-renew.sh`  
 
- 8. **证书有效期为什么只有90天?**
+ 7. **证书有效期为什么只有90天?**
 
     主要是因为Let's encrypt认为, 证书的申请和部署可以自动化时, 90天足够了.  
     具体可以看[这个官方说明](https://community.letsencrypt.org/t/pros-and-cons-of-90-day-certificate-lifetimes/4621)(可能需要自备梯子)  
     本安装脚本会在linux定时任务(crontab)中加入自动续期的脚本, 不用担心证书过期  
     即使自动续期脚本万一失效了, let's encrypt也会在快要过期时邮件通知你  
 
- 9. **其他高级功能, 比如说CDN, 在哪?**
+ 8. **其他高级功能, 比如说CDN, 在哪?**
 
     这个脚本只提供最基础的部署, 高级功能需要手动配置  
     请看[config_default.py](https://github.com/aploium/zmirror/blob/master/config_default.py)和[custom_func.sample.py](https://github.com/aploium/zmirror/blob/master/custom_func.sample.py)中的说明  
@@ -123,7 +123,7 @@
     > `config.py`中的设置会覆盖掉`config_default.py`中的同名设置  
     > 除非你是开发者, 否则无论如何都不应该修改`config_default.py`  
 
-10. **网速太慢?**
+ 9. **网速太慢?**
 
     如果你的VPS提供商允许的话, 可以试试看[net-speeder](https://github.com/snooda/net-speeder)  
     
@@ -131,4 +131,22 @@
     服务器地点是LA(Los Angeles), 速度相当快.  
     ps: 如果你也想试试看的话, 请点击[这个链接](https://clientarea.ramnode.com/aff.php?aff=2990)进入, 这里有我的推广小尾巴, 你买了的话我会有一丢丢(好像是10%)分成  
     ramnode允许使用net-speeder  
+
+10. **证书获取失败**
+    
+    脚本使用[Let's encrypt(certbot)](https://letsencrypt.org/)来获取证书  
+      
+    certbot 会在本地 Listen 80 或者 443 端口, 然后由远程授权服务器根据**域名的[A记录](https://support.dnspod.cn/Kb/showarticle/tsid/30/)**来**访问本机**  
+    当远程服务器成功连接到本机的certbot客户端后, 就会颁发证书.  
+    详细流程请看官方文档[How It Works](https://letsencrypt.org/how-it-works/)  
+    
+    证书获取失败最有可能的原因是域名记录设置后[尚未来得及生效](https://support.dnspod.cn/Kb/showarticle/tsid/53/), 域名DNS记录的生效通常需要数分钟到数小时  
+    对于这种情况, 除了等待以外是没有什么办法的.  
+    本脚本在默认的5次尝试失败后, 会提示是否一直尝试下去, 如果你确认DNS记录已经正常设置, 请在提示  
+    `max retries exceed, do you want to continue retry infinity?(Y/n)`  
+    时, 选择Y, 一般数分钟内就能成功.  
+    
+    如果不能确定是否正常设置, 可以访问 https://www.whatsmydns.net/ , 这个网站可以在全球范围内查询A记录  
+    如果查询出的A记录与你的IP相同, 就表示设置成功了, 此时只需要让脚本自行尝试即可  
+    
 

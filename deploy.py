@@ -764,12 +764,12 @@ try:
                             "    Meanwhile, you can obtain cert manually using:"
                         )
                         print("        cd /etc/certbot && " + certbot_cmd)
-                        ch = input("max retries exceed, do you want to continue retry infinity?(y/N) ")
-                        if ch in ("y", "yes", "Yes"):
-                            try_limit += 2000  # 无限尝试
-                        else:
+                        ch = input("max retries exceed, do you want to continue retry infinity?(Y/n) ")
+                        if ch in ("N", "n", "No", "no", "NO", "none", "None"):
                             errprint("Aborting...")
                             raise
+                        else:
+                            try_limit = 5000  # 无限尝试
 
                 else:
                     infoprint("Succeed: {domain}".format(domain=domain))
