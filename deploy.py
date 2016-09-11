@@ -2,17 +2,18 @@
 # coding=utf-8
 import os
 import sys
-from time import sleep
 import re
 import socket
 import shutil
 import subprocess
-import logging
 import traceback
 import tempfile
 import string
 import random
+from time import sleep
+from datetime import datetime
 from urllib.parse import urljoin
+import json
 
 try:
     from external_pkgs.ColorfulPyPrint import *
@@ -23,7 +24,7 @@ except:
     importantprint = print
 
 __AUTHOR__ = 'Aploium <i@z.codes>'
-__VERSION__ = '0.11.0'
+__VERSION__ = '0.12.0'
 __ZMIRROR_PROJECT_URL__ = 'https://github.com/aploium/zmirror/'
 __ZMIRROR_GIT_URL__ = 'https://github.com/aploium/zmirror.git'
 __ONKEY_PROJECT_URL__ = 'https://github.com/aploium/zmirror-onekey/'
@@ -56,8 +57,17 @@ if DEBUG:
 else:
     ColorfulPyPrint_set_verbose_level(2)
 
+# 初始化一些全局变量
+mirrors_to_deploy = []
+email = ""
+question = None  # {"name":"","answer":"","hint":""}
+need_answer_question = False
+loaded_config = False  # 加载了上一次的配置
 
-def onekey_report(report_type=REPORT_SUCCESS, installing_mirror=None, traceback_str=None, msg=None):
+DUMP_FILE_PATH = os.path.join(os.path.basename(os.path.abspath(__file__)), "last_install_dump.json")
+
+
+def onekey_report(report_type=REPORT_SUCCESS, traceback_str=None, msg=None):
     """
     发送报告到服务器
     尽可能保证在致命错误发生时也能传出错误报告
@@ -92,10 +102,8 @@ def onekey_report(report_type=REPORT_SUCCESS, installing_mirror=None, traceback_
         "stderr": stderr_str,
     }
     try:
-        if installing_mirror is not None:
-            if isinstance(installing_mirror, (list, tuple)):
-                installing_mirror = ','.join(installing_mirror)
-            data['installing_mirror'] = installing_mirror
+        if mirrors_to_deploy:
+            data['installing_mirror'] = ','.join(mirrors_to_deploy)
     except:
         data['installing_mirror'] = "Unable to get installing_mirror"
 
@@ -252,6 +260,19 @@ def cmd(command, cwd=None, no_tee=False, allow_failure=None, **kwargs):
         return True
 
 
+def dump_settings(dump_file_path=DUMP_FILE_PATH):
+    """将设置保存到文件"""
+    settings = {
+        "mirrors_to_deploy": mirrors_to_deploy,
+        "email": email,
+        "question": question,
+        "mirrors_settings": mirrors_settings,
+        "time": str(datetime.now()),
+    }
+    with open(dump_file_path, "w", encoding="utf-8") as fw:
+        json.dump(settings, fw)
+
+
 try:
     cmd('export LC_ALL=C.UTF-8')  # 设置bash环境为utf-8
 
@@ -285,12 +306,6 @@ except:
     errprint('Could not install requests, program exit')
     onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
     raise
-
-if DEBUG:
-    logging.basicConfig(
-        level=logging.NOTSET,
-        format='[%(levelname)s %(asctime)s %(funcName)s] %(message)s',
-    )
 
 server_configs = {
     "apache": {
@@ -441,9 +456,7 @@ if upgrade_only:
 
 # ################# 安装一些依赖包 ####################
 infoprint('Installing some necessarily packages')
-email = ""
-question = None
-# {"name":"","answer":"","hint":""}
+
 try:
     # 设置本地时间为北京时间
     try:
@@ -530,7 +543,29 @@ except:
     onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
     raise
 
-mirrors_to_deploy = []
+try:
+    # 尝试读取之前中断的安装设置
+    if os.path.exists(DUMP_FILE_PATH):
+        with open(DUMP_FILE_PATH, "r", encoding="utf-8") as fr:
+            last_cfg = json.load(fr)  # type: dict
+        infoprint(
+            "We detected an incomplete install in", last_cfg["time"],
+            "\n    with mirror:", ",".join(last_cfg["mirrors_to_deploy"])
+        )
+        if input("Do you want to continue that installation (Y/n)?") not in ("n", "N", "no", "No", "NO", "NOT"):
+            mirrors_to_deploy = last_cfg["mirrors_to_deploy"]
+            email = last_cfg["email"]
+            question = last_cfg["question"]
+            mirrors_settings = last_cfg["mirrors_settings"]
+            loaded_config = True
+
+except:
+    errprint("Unable to load last config, ignore")
+    os.remove("last_install.dump.json")
+    onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc(), msg="Unable to load last config")
+else:
+    infoprint("Load last installation's settings successfully")
+
 try:
     _input = -1
     while _input:  # 不断循环输入, 因为用户可能想要安装多个镜像
@@ -721,6 +756,9 @@ try:
         mirrors_to_deploy.append(mirror_type)
         mirrors_settings[mirror_type]['domain'] = domain
 
+        # 保存设置到文件, 以防中断
+        dump_settings()
+
         if already_have_cert:
             # noinspection PyUnboundLocalVariable
             mirrors_settings[mirror_type]['certs']['private_key'] = private_key
@@ -731,56 +769,75 @@ try:
 
         infoprint("Mirror:{mirror_type} Domain:{domain} checked".format(mirror_type=mirror_type, domain=domain))
 
-        logging.debug(mirrors_to_deploy)
+        dbgprint(mirrors_to_deploy)
 
     if not mirrors_to_deploy:
         errprint("[ERROR] you didn\'t select any mirror.\nAbort installation")
         raise RuntimeError('No mirror selected')
 
-    if not already_have_cert:
+    if email:  # 从上次安装的配置中读取
+        infoprint("You had set your email as:", email)
+        if input("Does this email correct (Y/n)?") in ("n", "N", "no", "NO", "No"):
+            email = ""
+
+    if not email and not already_have_cert:
         print()
         email = input('Please input your email (because letsencrypt requires an email for certification)\n')
 
         infoprint('Your email:', email)
 
-    # 是否需要输入正确的密码才能访问
-    print()
-    infoprint("zmirror can provide simple verification via password\n"
-              "    just as you may have seen in zmirror's demo sites (however, demo sites does not require correct answer)")
-    need_answer_question = input("Do you want to protect your mirror by password? (y/N): ")
-    if need_answer_question in ("y", "yes", "Yes", "YES"):
-        need_answer_question = True
+    dump_settings()
+
+    if question:
+        infoprint("You had set a question:", question["name"],
+                  "answer:", question["answer"],
+                  "hint:", question["hint"] or "NONE")
+        if input("Does this correct (Y/n)?") in ("n", "N", "no", "NO", "No"):
+            question = None
+        else:
+            need_answer_question = True
+
+    if not question:
+        # 是否需要输入正确的密码才能访问
         print()
-        infoprint(
-            "##TIPS1##\n"
-            "In your bash environment, you may not able to input Chinese,\n"
-            "    however, you can input English here,\n"
-            "    and change them to Chinese in the config file manually, after the installation.\n"
-            "    the settings are in /var/www/YOUR_MIRROR_FOLDER/config.py\n"
-            "###TIPS2##\n"
-            "This script here only provide BASIC settings for verification, \n"
-            "    For full verification settings list, \n"
-            "    please see the ##Human/IP verification## section of `config_default.py`\n"
-        )
-        while True:
-            name = input("Please input the question: ")
-            if not name:
-                errprint("    question should not be blank")
-                sleep(0.3)
-                continue
-            answer = input("Please input the answer (act as password): ")
-            if not answer:
-                errprint("    answer should not be blank")
-                sleep(0.3)
-                continue
-            hint = input("Please input the hint (optional, press [ENTER] to skip): ")
-            question = {"name": name, "answer": answer, "hint": hint}
-            break
-    else:
-        need_answer_question = False
+        infoprint("zmirror can provide simple verification via password\n"
+                  "    just as you may have seen in zmirror's demo sites (however, demo sites does not require correct answer)")
+        need_answer_question = input("Do you want to protect your mirror by password? (y/N): ")
+        if need_answer_question in ("y", "yes", "Yes", "YES"):
+            need_answer_question = True
+            print()
+            infoprint(
+                "##TIPS1##\n"
+                "In your bash environment, you may not able to input Chinese,\n"
+                "    however, you can input English here,\n"
+                "    and change them to Chinese in the config file manually, after the installation.\n"
+                "    the settings are in /var/www/YOUR_MIRROR_FOLDER/config.py\n"
+                "###TIPS2##\n"
+                "This script here only provide BASIC settings for verification, \n"
+                "    For full verification settings list, \n"
+                "    please see the ##Human/IP verification## section of `config_default.py`\n"
+            )
+            while True:
+                name = input("Please input the question: ")
+                if not name:
+                    errprint("    question should not be blank")
+                    sleep(0.3)
+                    continue
+                answer = input("Please input the answer (act as password): ")
+                if not answer:
+                    errprint("    answer should not be blank")
+                    sleep(0.3)
+                    continue
+                hint = input("Please input the hint (optional, press [ENTER] to skip): ")
+                question = {"name": name, "answer": answer, "hint": hint}
+                break
+        else:
+            need_answer_question = False
+
+    dump_settings()
 
     # 最后确认一遍设置
-    print('----------------------')
+    infoprint('----------------------')
     infoprint('Now, we are going to install, please check your settings here:')
     if not already_have_cert:
         print("  Email: " + email)
@@ -837,7 +894,6 @@ try:
                         infoprint("wait {} seconds and retry. ({}/{})".format(seconds_to_wait, i, try_limit))
                         onekey_report(
                             report_type=REPORT_ERROR,
-                            installing_mirror=mirrors_to_deploy,
                             traceback_str=traceback.format_exc(),
                             msg="({}/{})".format(i, try_limit),
                         )
@@ -887,8 +943,10 @@ try:
     config_root = this_server['config_root']  # type: str
 
     os.chdir(htdoc)
-    cmd('git clone %s zmirror  --depth=1' % __ZMIRROR_GIT_URL__, cwd=htdoc)
     zmirror_source_folder = os.path.join(htdoc, 'zmirror')
+    if os.path.exists(zmirror_source_folder):  # 如果存在zmirror目录, 则移除掉(可能是上一次安装未完成的残留)
+        shutil.rmtree(zmirror_source_folder)
+    cmd('git clone %s zmirror  --depth=1' % __ZMIRROR_GIT_URL__, cwd=htdoc)
 
     # 预删除文件
     for pre_delete_file in this_server['pre_delete_files']:
@@ -899,22 +957,26 @@ try:
         try:
             os.remove(abs_path)
         except:
-            logging.debug("Unable to remove file:" + abs_path + "\n" + traceback.format_exc())
+            dbgprint("Unable to remove file:" + abs_path)
 
     # 拷贝并设置各个镜像
     for mirror in mirrors_to_deploy:
         domain = mirrors_settings[mirror]['domain']
         this_mirror_folder = os.path.join(htdoc, mirror)
 
-        # 如果文件夹已存在, 则报错
+        # 如果文件夹已存在, 则报错. 但是如果是加载上次的配置, 则不报错, 而是删除掉上一次安装的文件夹, 重新安装
         if os.path.exists(this_mirror_folder):
-            errprint(
-                ("Folder {folder} already exists."
-                 "If you want to override, please delete that folder manually and run this script again"
-                 ).format(folder=this_mirror_folder)
-            )
-            raise RuntimeError("Folder {folder} for mirror [{mirror_name}] already exists.".format(
-                folder=this_mirror_folder, mirror_name=mirror))
+            if loaded_config:
+                warnprint("Folder {} already exists, will be removed".format(this_mirror_folder))
+                shutil.rmtree(this_mirror_folder)
+            else:
+                errprint(
+                    ("Folder {folder} already exists."
+                     "If you want to override, please delete that folder manually and run this script again"
+                     ).format(folder=this_mirror_folder)
+                )
+                raise RuntimeError("Folder {folder} for mirror [{mirror_name}] already exists.".format(
+                    folder=this_mirror_folder, mirror_name=mirror))
 
         # 将 zmirror 文件夹复制一份
         shutil.copytree(zmirror_source_folder, this_mirror_folder)
@@ -1000,10 +1062,17 @@ try:
             file_path = os.path.join(config_root, this_server['configs'][conf_name]['file_path'])
             file_path = file_path.format(mirror_name=mirror, conf_name=conf_name)
 
-            if os.path.exists(file_path):  # 若配置文件已存在则跳过
-                warnprint("Config {path} already exists, skipping".format(path=file_path))
-                sleep(0.2)
-                continue
+            if os.path.exists(file_path):
+                if loaded_config:
+                    # 若是加载上一次的配置, 则先移除掉已存在的配置文件, 再重新安装
+                    warnprint("Config {path} already exists, will be removed".format(path=file_path))
+                    sleep(0.2)
+                    os.remove(file_path)
+                else:
+                    # 若配置文件已存在则跳过
+                    warnprint("Config {path} already exists, skipping".format(path=file_path))
+                    sleep(0.2)
+                    continue
 
             infoprint("downloading: ", mirror, conf_name)
 
@@ -1072,12 +1141,18 @@ except KeyboardInterrupt:
     onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc(), msg="KeyboardInterrupt")
     raise
 except:
-    onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc(), installing_mirror=mirrors_to_deploy)
+    onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
     raise
+
+# 已经安装成功, 移除掉设置文件
+try:
+    os.remove(DUMP_FILE_PATH)
+except:
+    pass
 
 infoprint("Finishing...")
 try:
-    onekey_report(report_type=REPORT_SUCCESS, installing_mirror=mirrors_to_deploy)
+    onekey_report(report_type=REPORT_SUCCESS)
 except:
     try:
         onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc(), msg="SuccessReportError")
