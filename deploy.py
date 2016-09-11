@@ -64,7 +64,7 @@ question = None  # {"name":"","answer":"","hint":""}
 need_answer_question = False
 loaded_config = False  # 加载了上一次的配置
 
-DUMP_FILE_PATH = os.path.join(os.path.basename(os.path.abspath(__file__)), "last_install_dump.json")
+DUMP_FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "last_install_dump.json")
 
 
 def onekey_report(report_type=REPORT_SUCCESS, traceback_str=None, msg=None):
