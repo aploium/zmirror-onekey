@@ -16,6 +16,9 @@
 3. 域名
     * 每个镜像要求一个三级域名(类似于`g.zmirrordemo.com`这样的, 有三部分, 两个点)  
     * 域名已经在DNS记录中正确指向你的VPS
+    
+    > **提示**  
+    > 如果你没有自己的域名, 请看[FAQ-我没有自己的域名](https://github.com/aploium/zmirror-onekey#%e6%88%91%e6%b2%a1%e6%9c%89%e8%87%aa%e5%b7%b1%e7%9a%84%e5%9f%9f%e5%90%8d)  
   
 ## 运行方法
 
