@@ -262,6 +262,10 @@ def cmd(command, cwd=None, no_tee=False, allow_failure=None, **kwargs):
 
 def dump_settings(dump_file_path=DUMP_FILE_PATH):
     """将设置保存到文件"""
+    # 仅自动获取证书时支持继续上次失败的设置
+    if already_have_cert:
+        return
+
     settings = {
         "mirrors_to_deploy": mirrors_to_deploy,
         "email": email,
