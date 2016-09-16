@@ -423,6 +423,7 @@ if upgrade_only:
     cmd("python3 -m pip install -U flask requests", allow_failure=True)
     cmd("python3 -m pip install -U cchardet", allow_failure=True)
     cmd("python3 -m pip install -U fastcache", allow_failure=True)
+    cmd("python3 -m pip install -U lru-dict", allow_failure=True)
 
     for mirror, values in mirrors_settings.items():
         this_mirror_folder = values["installed_path"]
@@ -511,7 +512,10 @@ try:
     cmd('python3 -m pip install -U requests flask')
 
     # 安装和更新非必须, 但是有好处的python包, 允许失败
-    cmd('python3 -m pip install -U chardet fastcache cchardet', allow_failure=True)
+    cmd('python3 -m pip install -U chardet', allow_failure=True)
+    cmd("python3 -m pip install -U cchardet", allow_failure=True)
+    cmd("python3 -m pip install -U fastcache", allow_failure=True)
+    cmd("python3 -m pip install -U lru-dict", allow_failure=True)
 
     infoprint('Dependency packages install completed')
     infoprint('Installing letsencrypt...')
