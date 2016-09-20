@@ -525,14 +525,9 @@ try:
             # certbot 不存在, 则安装
             cmd('git clone https://github.com/certbot/certbot.git --depth=1', cwd='/etc/')
             cmd('chmod a+x /etc/certbot/certbot-auto', cwd='/etc/certbot/')
-            cmd('service apache2 stop')
-            cmd('./certbot-auto renew --agree-tos -n --standalone '
-                '--pre-hook "service apache2 stop" '
-                '--post-hook "service apache2 restart"',
-                cwd='/etc/certbot/',
-                # ubuntu14.04下, 使用tee会出现无法正常退出的bug
-                no_tee=distro.id() == 'ubuntu' and distro.version() == '14.04'
-                )
+            cmd("service apache2 stop", no_tee=True)
+            cmd('./certbot-auto renew --agree-tos -n --standalone', cwd='/etc/certbot/')
+            cmd("service apache2 start", no_tee=True)
         else:
             # 否则升级一下
             cmd('git pull', cwd='/etc/certbot/')
@@ -868,7 +863,7 @@ try:
     if not already_have_cert:
         # 通过 letsencrypt 获取HTTPS证书
         infoprint("Fetching HTTPS certifications")
-        cmd("service apache2 stop")  # 先关掉apache
+        cmd("service apache2 stop", no_tee=True)  # 先关掉apache
         for mirror in mirrors_to_deploy:
             domain = mirrors_settings[mirror]['domain']
 
@@ -936,7 +931,7 @@ try:
 
         cmd("service apache2 start",  # 重新启动apache
             # ubuntu14.04下, 使用tee会出现无法正常退出的bug, 所以禁用掉
-            no_tee=distro.id() == 'ubuntu' and distro.version() == '14.04'
+            no_tee=True
             )
 
     else:  # 选择自己提供证书
@@ -1128,10 +1123,10 @@ try:
         # 添加 let's encrypt 证书自动更新脚本
         infoprint("Adding cert auto renew script to `/etc/cron.weekly/zmirror-letsencrypt-renew.sh`")
         cron_script = """#!/bin/bash
-    cd /etc/certbot
-    ./certbot-auto renew -n --agree-tos --standalone --pre-hook "/usr/sbin/service apache2 stop" --post-hook "/usr/sbin/service apache2 start"
-    exit 0
-    """
+cd /etc/certbot
+./certbot-auto renew -n --agree-tos --standalone --pre-hook "/usr/sbin/service apache2 stop" --post-hook "/usr/sbin/service apache2 start"
+exit 0
+"""
         with open("/etc/cron.weekly/zmirror-letsencrypt-renew.sh", "w", encoding='utf-8') as fp:
             fp.write(cron_script)
 
@@ -1142,7 +1137,7 @@ try:
     infoprint("Restarting apache2")
     cmd('service apache2 restart',
         # ubuntu14.04下, 使用tee会出现无法正常退出的bug
-        no_tee=distro.id() == 'ubuntu' and distro.version() == '14.04'
+        no_tee=True
         )
 except KeyboardInterrupt:
     errprint("KeyboardInterrupt Aborting...")
