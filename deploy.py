@@ -882,7 +882,7 @@ try:
             seconds_to_wait = 4
             while True:
                 i += 1
-                seconds_to_wait += 1
+                seconds_to_wait += i
                 try:
                     result = cmd(certbot_cmd, cwd='/etc/certbot/', allow_failure=True)
 
@@ -918,12 +918,12 @@ try:
                             "        cd /etc/certbot && " + certbot_cmd
                         )
                         infoprint("For more information, please see http://tinyurl.com/zmcert")
-                        ch = input("max retries exceed, do you want to continue retry infinity?(Y/n) ")
+                        ch = input("max retries exceed, do you want to continue retry?(Y/n) ")
                         if ch in ("N", "n", "No", "no", "NO", "none", "None"):
                             errprint("Aborting...")
                             raise
                         else:
-                            try_limit = 5000  # 无限尝试
+                            try_limit += 100
 
                 else:
                     infoprint("Succeed: {domain}".format(domain=domain))
