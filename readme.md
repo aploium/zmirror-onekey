@@ -144,7 +144,7 @@
     当远程服务器成功连接到本机的certbot客户端后, 就会颁发证书.  
     详细流程请看官方文档[How It Works](https://letsencrypt.org/how-it-works/)  
     
-    证书获取失败最有可能的原因是域名记录设置后[尚未来得及生效](https://support.dnspod.cn/Kb/showarticle/tsid/53/), 域名DNS记录的生效通常需要数分钟到数小时  
+    证书获取失败最有可能的原因是域名记录设置后[尚未来得及生效](https://support.dnspod.cn/Kb/showarticle/tsid/53/), 域名DNS记录的生效通常需要数分钟以上, 最长可达*72小时*  
     对于这种情况, 除了等待以外是没有什么办法的.  
     本脚本在默认的5次尝试失败后, 会提示是否一直尝试下去, 如果你确认DNS记录已经正常设置, 请在提示  
     `max retries exceed, do you want to continue retry infinity?(Y/n)`  
