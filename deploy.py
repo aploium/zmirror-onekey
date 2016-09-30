@@ -450,7 +450,7 @@ if upgrade_only:
     if success_count:
         infoprint("zmirror upgrade complete, restarting apache2 ")
         try:
-            cmd("service apache2 restart", no_tee=True, allow_failure=False)
+            cmd("service apache2 restart", no_tee=True, allow_failure=True)
         except:
             errprint("Unable to restart apache2, please execute `service apache2 restart` manually")
             onekey_report(report_type=REPORT_ERROR, traceback_str=traceback.format_exc())
@@ -527,7 +527,7 @@ try:
             cmd('chmod a+x /etc/certbot/certbot-auto', cwd='/etc/certbot/')
             cmd("service apache2 stop", no_tee=True)
             cmd('./certbot-auto renew --agree-tos -n --standalone', cwd='/etc/certbot/')
-            cmd("service apache2 start", no_tee=True)
+            cmd("service apache2 start", no_tee=True, allow_failure=True)
         else:
             # 否则升级一下
             cmd('git pull', cwd='/etc/certbot/')
@@ -931,7 +931,7 @@ try:
 
         cmd("service apache2 start",  # 重新启动apache
             # ubuntu14.04下, 使用tee会出现无法正常退出的bug, 所以禁用掉
-            no_tee=True
+            no_tee=True, allow_failure=True,
             )
 
     else:  # 选择自己提供证书
@@ -1137,7 +1137,7 @@ exit 0
     infoprint("Restarting apache2")
     cmd('service apache2 restart',
         # ubuntu14.04下, 使用tee会出现无法正常退出的bug
-        no_tee=True
+        no_tee=True, allow_failure=True,
         )
 except KeyboardInterrupt:
     errprint("KeyboardInterrupt Aborting...")
@@ -1164,6 +1164,7 @@ except:
 
 # ####### 完成 ########
 infoprint("Congratulation!")
+infoprint("If apache is not running, please execute `sudo service apache2 restart`")
 # 最后打印一遍配置
 infoprint("------------ mirrors ------------")
 for mirror in mirrors_to_deploy:
