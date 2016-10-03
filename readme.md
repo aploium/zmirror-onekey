@@ -156,8 +156,28 @@
     
     如果不能确定是否正常设置, 可以访问 https://www.whatsmydns.net/ , 这个网站可以在全球范围内查询A记录  
     如果查询出的A记录与你的IP相同, 就表示设置成功了, 此时只需要让脚本自行尝试即可  
+    如果此时仍然多次尝试失败, 请看下面的`手动运行lets encrypt获取证书`部分  
     
- 11. #### 更新zmirror
+    > **手动运行lets encrypt获取证书**  
+    > 如果能确认DNS记录已经设置正常, 但是仍然无法获取证书, 请尝试手动运行letsencrypt获取证书:
+    >   
+    > ```bash
+    > sudo service apache2 stop
+    > sudo /etc/certbot/certbot-auto certonly --standalone -d "你的域名"
+    > sudo service apache2 start
+    > ```
+    >   
+    > 或者(如果上面的仍然失败)  
+    > ```bash
+    > sudo apt-get install letsencrypt
+    > sudo service apache2 stop
+    > sudo letsencrypt certonly --standalone -d "你的域名"
+    > sudo service apache2 start
+    > ```
+    >
+    > 并在手动获取证书成功后再次运行本脚本  
+    
+10. #### 更新zmirror
    
     请运行以下代码(假设`zmirror-onekey`是本脚本文件夹):  
     ```bash
