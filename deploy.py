@@ -916,10 +916,10 @@ try:
                             "https://www.whatsmydns.net/\n"
                             "    Meanwhile, you can obtain cert manually using:" + certbot_cmd
                         )
-                        infoprint("For more information, please see http://tinyurl.com/zmcert")
-                        infoprint("For more information, please see http://tinyurl.com/zmcert")
-                        infoprint("For more information, please see http://tinyurl.com/zmcert")
-                        infoprint("For more information, please see http://tinyurl.com/zmcert")
+                        importantprint("For more information, please see http://tinyurl.com/zmcert")
+                        importantprint("For more information, please see http://tinyurl.com/zmcert")
+                        importantprint("For more information, please see http://tinyurl.com/zmcert")
+                        importantprint("For more information, please see http://tinyurl.com/zmcert")
                         ch = input("max retries exceed, do you want to continue retry?(Y/n) ")
                         if ch in ("N", "n", "No", "no", "NO", "none", "None"):
                             errprint("Aborting...")
