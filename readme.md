@@ -163,7 +163,8 @@
     >   
     > ```bash
     > sudo service apache2 stop
-    > sudo /etc/certbot/certbot-auto certonly --standalone -d "你的域名"
+    > sudo /etc/certbot/certbot-auto certonly --standalone -d "你的域名1"
+    > sudo /etc/certbot/certbot-auto certonly --standalone -d "你的域名2"
     > sudo service apache2 start
     > ```
     >   
@@ -171,7 +172,8 @@
     > ```bash
     > sudo apt-get install letsencrypt
     > sudo service apache2 stop
-    > sudo letsencrypt certonly --standalone -d "你的域名"
+    > sudo letsencrypt certonly --standalone -d "你的域名1"
+    > sudo letsencrypt certonly --standalone -d "你的域名2"
     > sudo service apache2 start
     > ```
     >
