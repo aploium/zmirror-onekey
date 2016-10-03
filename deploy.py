@@ -526,7 +526,7 @@ try:
             cmd('git clone https://github.com/certbot/certbot.git --depth=1', cwd='/etc/')
             cmd('chmod a+x /etc/certbot/certbot-auto', cwd='/etc/certbot/')
             cmd("service apache2 stop", no_tee=True)
-            cmd('./certbot-auto renew --agree-tos -n --standalone', cwd='/etc/certbot/')
+            cmd('/etc/certbot/certbot-auto renew --agree-tos -n --standalone', cwd='/etc/certbot/')
             cmd("service apache2 start", no_tee=True, allow_failure=True)
         else:
             # 否则升级一下
@@ -877,7 +877,7 @@ try:
             i = 0
             try_limit = 5
             certbot_cmd = (
-                './certbot-auto certonly -n --agree-tos -t -m "{email}" --standalone -d "{domain}" '
+                '/etc/certbot/certbot-auto certonly -n --agree-tos -t -m "{email}" --standalone -d "{domain}" '
             ).format(email=email, domain=domain)
             seconds_to_wait = 4
             while True:
@@ -1124,7 +1124,7 @@ try:
         infoprint("Adding cert auto renew script to `/etc/cron.weekly/zmirror-letsencrypt-renew.sh`")
         cron_script = """#!/bin/bash
 cd /etc/certbot
-./certbot-auto renew -n --agree-tos --standalone --pre-hook "/usr/sbin/service apache2 stop" --post-hook "/usr/sbin/service apache2 start"
+/etc/certbot/certbot-auto renew -n --agree-tos --standalone --pre-hook "/usr/sbin/service apache2 stop" --post-hook "/usr/sbin/service apache2 start"
 exit 0
 """
         with open("/etc/cron.weekly/zmirror-letsencrypt-renew.sh", "w", encoding='utf-8') as fp:
