@@ -914,9 +914,11 @@ try:
                             "let's encrypt server may takes minutes or even hours to recognize your DNS settings.\n"
                             "    If you doesn't sure whether your DNS A record are correct, please check it using "
                             "https://www.whatsmydns.net/\n"
-                            "    Meanwhile, you can obtain cert manually using:"
-                            "        cd /etc/certbot && " + certbot_cmd
+                            "    Meanwhile, you can obtain cert manually using:" + certbot_cmd
                         )
+                        infoprint("For more information, please see http://tinyurl.com/zmcert")
+                        infoprint("For more information, please see http://tinyurl.com/zmcert")
+                        infoprint("For more information, please see http://tinyurl.com/zmcert")
                         infoprint("For more information, please see http://tinyurl.com/zmcert")
                         ch = input("max retries exceed, do you want to continue retry?(Y/n) ")
                         if ch in ("N", "n", "No", "no", "NO", "none", "None"):
