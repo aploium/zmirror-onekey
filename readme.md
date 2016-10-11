@@ -2,6 +2,8 @@
 
 使用[zmirror](https://github.com/aploium/zmirror)快速部署镜像的脚本  
 
+如果无法部署成功, 可以尝试手动部署: [手动部署zmirror](https://github.com/aploium/zmirror/wiki/%E9%83%A8%E7%BD%B2%E6%94%AF%E6%8C%81HTTPS%E5%92%8CHTTP2.0%E7%9A%84%E9%95%9C%E5%83%8F)  
+
 ## 前置需求
 
 1. 一台墙外VPS, OpenVZ/Xen/KVM均可  
