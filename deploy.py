@@ -24,7 +24,7 @@ except:
     importantprint = print
 
 __AUTHOR__ = 'Aploium <i@z.codes>'
-__VERSION__ = '0.12.0'
+__VERSION__ = '0.12.1'
 __ZMIRROR_PROJECT_URL__ = 'https://github.com/aploium/zmirror/'
 __ZMIRROR_GIT_URL__ = 'https://github.com/aploium/zmirror.git'
 __ONKEY_PROJECT_URL__ = 'https://github.com/aploium/zmirror-onekey/'
@@ -288,6 +288,7 @@ try:
     cmd('easy_install3 -U pip')
 
     # 安装本脚本必须的python包
+    cmd('python3 -m pip install -U setuptools')
     cmd('python3 -m pip install -U requests')
     cmd('python3 -m pip install -U distro')
 except KeyboardInterrupt:
