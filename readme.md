@@ -3,6 +3,7 @@
 使用[zmirror](https://github.com/aploium/zmirror)快速部署镜像的脚本  
 
 如果无法部署成功, 可以尝试手动部署: [手动部署zmirror](https://github.com/aploium/zmirror/wiki/%E9%83%A8%E7%BD%B2%E6%94%AF%E6%8C%81HTTPS%E5%92%8CHTTP2.0%E7%9A%84%E9%95%9C%E5%83%8F)  
+或尝试[由yumin9822提供的脚本](https://github.com/aploium/zmirror-onekey/issues/18)  
 
 ## 前置需求
 
@@ -12,6 +13,7 @@
         * Ubuntu 14.04/15.04(不支持HTTP2)/15.10/16.04+  
         * Debian 8 (不支持HTTP/2)  
         * **不支持** CentOS/RHEL/Windows/Fedora/Arch/...
+          对于这些系统, 可以使用[由yumin9822提供的这个脚本](https://github.com/aploium/zmirror-onekey/issues/18)  
     * 推荐的操作系统:  
         * Ubuntu 16.04 x86_64
     * 全新(刚安装完成)的操作系统. 如果系统中有其他东西, 可能会产生冲突   
