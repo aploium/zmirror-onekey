@@ -289,7 +289,7 @@ try:
 
     # 安装本脚本必须的python包
     cmd('python3 -m pip install -U setuptools')
-    cmd('python3 -m pip install -U requests')
+    cmd('python3 -m pip install requests==2.11.0')
     cmd('python3 -m pip install -U distro')
 except KeyboardInterrupt:
     infoprint("Aborting...")
@@ -421,7 +421,7 @@ if upgrade_only:
 
     infoprint("Upgrading dependencies")
     cmd("python3 -m pip install -U pip", allow_failure=True)
-    cmd("python3 -m pip install -U flask requests", allow_failure=True)
+    cmd("python3 -m pip install flask", allow_failure=True)
     cmd("python3 -m pip install -U cchardet", allow_failure=True)
     cmd("python3 -m pip install -U fastcache", allow_failure=True)
     cmd("python3 -m pip install -U lru-dict", allow_failure=True)
@@ -510,7 +510,8 @@ try:
     cmd("""apt-get -y -q install libapache2-mod-wsgi-py3&& a2enmod wsgi""")
 
     # 安装和更新必须的python包
-    cmd('python3 -m pip install -U requests flask')
+    cmd('python3 -m pip install -U flask')
+    cmd('python3 -m pip install requests==2.11.0')
 
     # 安装和更新非必须, 但是有好处的python包, 允许失败
     cmd('python3 -m pip install -U chardet', allow_failure=True)
